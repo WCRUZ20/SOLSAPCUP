@@ -1,0 +1,49 @@
+@model SalesPortal.Web.Models.Cup.AdminCupCountriesViewModel
+@{
+    ViewData["Title"] = "Administración - Países";
+}
+
+<div class="admin-module-header">
+    <div>
+        <span class="eyebrow">Submódulo de administración</span>
+        <h2>Registro de países del mundial</h2>
+        <p>Administra los códigos y nombres de los países participantes.</p>
+    </div>
+    <a class="btn btn-secondary" asp-action="Players">Ir a jugadores</a>
+    <a class="btn btn-secondary" asp-action="Matches">Ir a partidos</a>
+</div>
+
+<section class="cup-card admin-module-card">
+    <div class="cup-card-header">
+        <div>
+            <span class="eyebrow">Países</span>
+            <h3>Registrar / actualizar país</h3>
+        </div>
+    </div>
+    <form asp-action="SaveCountry" method="post" class="cup-form">
+        @Html.AntiForgeryToken()
+        <input asp-for="Country.Code" class="cup-input" placeholder="ID interno (solo para actualizar)" />
+        <input asp-for="Country.CountryCode" class="cup-input" placeholder="Código país" />
+        <input asp-for="Country.CountryName" class="cup-input" placeholder="Nombre país" />
+        <input asp-for="Country.Name" class="cup-input" placeholder="Nombre SAP (opcional)" />
+        <button type="submit" class="btn btn-primary">Guardar país</button>
+    </form>
+</section>
+
+<div class="section-title dashboard-table-title">
+    <div>
+        <span class="eyebrow">Datos actuales</span>
+        <h2>Países del mundial</h2>
+    </div>
+</div>
+<div class="table-wrapper admin-table">
+    <table>
+        <thead><tr><th>ID</th><th>Código país</th><th>Nombre país</th><th>Nombre SAP</th></tr></thead>
+        <tbody>
+        @foreach (var country in Model.Countries)
+        {
+            <tr><td class="text-strong">@country.Code</td><td>@country.CountryCode</td><td>@country.CountryName</td><td>@country.Name</td></tr>
+        }
+        </tbody>
+    </table>
+</div>

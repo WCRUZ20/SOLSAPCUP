@@ -20,7 +20,7 @@ public sealed class AdminCupController : Controller
 
     public IActionResult Index()
     {
-        return RedirectToAction(nameof(Players));
+        return View();
     }
 
     public async Task<IActionResult> Players(CancellationToken cancellationToken)
@@ -31,6 +31,11 @@ public sealed class AdminCupController : Controller
     public async Task<IActionResult> Matches(CancellationToken cancellationToken)
     {
         return View(await BuildMatchesModelAsync(cancellationToken));
+    }
+
+    public async Task<IActionResult> Countries(CancellationToken cancellationToken)
+    {
+        return View(await BuildCountriesModelAsync(cancellationToken));
     }
 
     [HttpPost]
@@ -59,6 +64,30 @@ public sealed class AdminCupController : Controller
 
         TempData["Success"] = "Jugador guardado correctamente.";
         return RedirectToAction(nameof(Players));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SaveCountry(AdminCupCountriesViewModel model, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(model.Country.CountryCode) || string.IsNullOrWhiteSpace(model.Country.CountryName))
+        {
+            TempData["Error"] = "Ingrese código y nombre del país.";
+            return RedirectToAction(nameof(Countries));
+        }
+
+        var countryName = model.Country.CountryName.Trim();
+        var tenant = _tenantResolver.ResolveByHost(HttpContext.Request.Host.Value);
+        await _cupRepository.SaveWorldCupCountryAsync(tenant, new WorldCupCountry
+        {
+            Code = model.Country.Code,
+            Name = string.IsNullOrWhiteSpace(model.Country.Name) ? countryName : model.Country.Name.Trim(),
+            CountryCode = model.Country.CountryCode.Trim(),
+            CountryName = countryName
+        }, cancellationToken);
+
+        TempData["Success"] = "País guardado correctamente.";
+        return RedirectToAction(nameof(Countries));
     }
 
     [HttpPost]
@@ -129,6 +158,23 @@ public sealed class AdminCupController : Controller
                 GoalsPlayer1 = m.GoalsPlayer1,
                 GoalsPlayer2 = m.GoalsPlayer2,
                 Observation = m.Observation
+            }).ToList()
+        };
+    }
+
+    private async Task<AdminCupCountriesViewModel> BuildCountriesModelAsync(CancellationToken cancellationToken)
+    {
+        var tenant = _tenantResolver.ResolveByHost(HttpContext.Request.Host.Value);
+        var countries = await _cupRepository.GetWorldCupCountriesAsync(tenant, cancellationToken);
+
+        return new AdminCupCountriesViewModel
+        {
+            Countries = countries.Select(c => new CountryFormViewModel
+            {
+                Code = c.Code,
+                Name = c.Name,
+                CountryCode = c.CountryCode,
+                CountryName = c.CountryName
             }).ToList()
         };
     }

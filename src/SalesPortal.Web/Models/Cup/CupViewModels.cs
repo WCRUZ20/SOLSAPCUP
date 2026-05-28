@@ -32,6 +32,12 @@ namespace SalesPortal.Web.Models.Cup
         public MatchFormViewModel Match { get; set; } = new();
     }
 
+    public sealed class AdminCupCountriesViewModel
+    {
+        public IReadOnlyList<CountryFormViewModel> Countries { get; set; } = Array.Empty<CountryFormViewModel>();
+        public CountryFormViewModel Country { get; set; } = new();
+    }
+
     public sealed class CompetitorFormViewModel
     {
         [Required] public string Code { get; set; } = string.Empty;
@@ -56,5 +62,13 @@ namespace SalesPortal.Web.Models.Cup
         public decimal? GoalsPlayer1 { get; set; }
         public decimal? GoalsPlayer2 { get; set; }
         public string Observation { get; set; } = string.Empty;
+    }
+
+    public sealed class CountryFormViewModel
+    {
+        public int? Code { get; set; }
+        [Required] public string CountryCode { get; set; } = string.Empty;
+        [Required] public string CountryName { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
     }
 }

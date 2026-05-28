@@ -32,6 +32,7 @@
                         <div class="submenu" aria-label="Submódulos de administración">
                             <a class="submenu-item @(currentController == "AdminCup" && currentAction == "Players" ? "active" : string.Empty)" asp-controller="AdminCup" asp-action="Players">Jugadores</a>
                             <a class="submenu-item @(currentController == "AdminCup" && currentAction == "Matches" ? "active" : string.Empty)" asp-controller="AdminCup" asp-action="Matches">Partidos</a>
+                            <a class="submenu-item @(currentController == "AdminCup" && currentAction == "Countries" ? "active" : string.Empty)" asp-controller="AdminCup" asp-action="Countries">Países</a>
                         </div>
                     </div>
                 }

@@ -77,6 +77,33 @@ namespace SalesPortal.Infrastructure.Persistence.Sap
             return await QueryMatchesAsync(tenant, sql, null, cancellationToken);
         }
 
+        public async Task<IReadOnlyList<WorldCupCountry>> GetWorldCupCountriesAsync(Tenant tenant, CancellationToken cancellationToken)
+        {
+            var dialect = SapSqlDialect.For(tenant);
+            var countryNameOrder = tenant.IsSqlServer
+                ? $"CONVERT(nvarchar(4000), {dialect.Identifier("U_NOMB_PAIS")})"
+                : dialect.Identifier("U_NOMB_PAIS");
+            var sql = $@"
+                SELECT
+                    {Column(dialect, "Code")},
+                    {Column(dialect, "Name")},
+                    {Column(dialect, "U_COD_PAIS")},
+                    {Column(dialect, "U_NOMB_PAIS")}
+                FROM {dialect.Table("@PAISES_MUNDIAL")}
+                ORDER BY {countryNameOrder}, {dialect.Identifier("Name")}";
+
+            await using var connection = _connectionFactory.CreateConnection(tenant);
+            await connection.OpenAsync(cancellationToken);
+            await using var command = CreateCommand(connection, sql);
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+            var countries = new List<WorldCupCountry>();
+            while (await reader.ReadAsync(cancellationToken))
+                countries.Add(MapWorldCupCountry(reader));
+
+            return countries;
+        }
+
         public async Task<IReadOnlyList<CupMatch>> GetMatchesForPlayerAsync(Tenant tenant, string playerId, string competitorCode, CancellationToken cancellationToken)
         {
             var dialect = SapSqlDialect.For(tenant);
@@ -114,6 +141,27 @@ namespace SalesPortal.Infrastructure.Persistence.Sap
                 VALUES ({dialect.Parameter(0)}, {dialect.Parameter(1)}, {dialect.Parameter(2)}, {dialect.Parameter(3)}, {dialect.Parameter(4)}, {dialect.Parameter(5)}, {dialect.Parameter(6)}, {dialect.Parameter(7)}, {dialect.Parameter(8)})";
 
             await ExecuteSaveAsync(tenant, sql, command => AddCompetitorParameters(command, dialect, competitor), cancellationToken);
+        }
+
+        public async Task SaveWorldCupCountryAsync(Tenant tenant, WorldCupCountry country, CancellationToken cancellationToken)
+        {
+            var dialect = SapSqlDialect.For(tenant);
+            var sql = $@"
+                IF {dialect.Parameter(0)} IS NOT NULL AND EXISTS (SELECT 1 FROM {dialect.Table("@PAISES_MUNDIAL")} WHERE {dialect.Identifier("Code")} = {dialect.Parameter(0)})
+                BEGIN
+                    UPDATE {dialect.Table("@PAISES_MUNDIAL")}
+                    SET {dialect.Identifier("Name")} = {dialect.Parameter(1)},
+                        {dialect.Identifier("U_COD_PAIS")} = {dialect.Parameter(2)},
+                        {dialect.Identifier("U_NOMB_PAIS")} = {dialect.Parameter(3)}
+                    WHERE {dialect.Identifier("Code")} = {dialect.Parameter(0)}
+                END
+                ELSE
+                BEGIN
+                    INSERT INTO {dialect.Table("@PAISES_MUNDIAL")} ({dialect.Identifier("Name")}, {dialect.Identifier("U_COD_PAIS")}, {dialect.Identifier("U_NOMB_PAIS")})
+                    VALUES ({dialect.Parameter(1)}, {dialect.Parameter(2)}, {dialect.Parameter(3)})
+                END";
+
+            await ExecuteSaveAsync(tenant, sql, command => AddWorldCupCountryParameters(command, dialect, country), cancellationToken);
         }
 
         public async Task SaveMatchAsync(Tenant tenant, CupMatch match, CancellationToken cancellationToken)
@@ -183,8 +231,10 @@ namespace SalesPortal.Infrastructure.Persistence.Sap
         private static void AddParameter(DbCommand command, string name, object? value) { var p = command.CreateParameter(); p.ParameterName = name; p.Value = value ?? DBNull.Value; command.Parameters.Add(p); }
         private static void AddCompetitorParameters(DbCommand command, SapSqlDialect dialect, Competitor c) { AddParameter(command, dialect.Parameter(0), c.Code); AddParameter(command, dialect.Parameter(1), c.Name); AddParameter(command, dialect.Parameter(2), c.PlayerId); AddParameter(command, dialect.Parameter(3), c.Team); AddParameter(command, dialect.Parameter(4), c.Matches); AddParameter(command, dialect.Parameter(5), c.Points); AddParameter(command, dialect.Parameter(6), c.GoalDifference); AddParameter(command, dialect.Parameter(7), c.TablePosition); AddParameter(command, dialect.Parameter(8), c.Status); }
         private static void AddMatchParameters(DbCommand command, SapSqlDialect dialect, CupMatch m) { AddParameter(command, dialect.Parameter(0), m.Code); AddParameter(command, dialect.Parameter(1), m.Name); AddParameter(command, dialect.Parameter(2), m.MatchDate); AddParameter(command, dialect.Parameter(3), m.MatchTime); AddParameter(command, dialect.Parameter(4), m.Player1); AddParameter(command, dialect.Parameter(5), m.Player2); AddParameter(command, dialect.Parameter(6), m.GoalsPlayer1); AddParameter(command, dialect.Parameter(7), m.GoalsPlayer2); AddParameter(command, dialect.Parameter(8), m.Observation); }
+        private static void AddWorldCupCountryParameters(DbCommand command, SapSqlDialect dialect, WorldCupCountry c) { AddParameter(command, dialect.Parameter(0), c.Code); AddParameter(command, dialect.Parameter(1), c.Name); AddParameter(command, dialect.Parameter(2), c.CountryCode); AddParameter(command, dialect.Parameter(3), c.CountryName); }
         private static Competitor MapCompetitor(IDataRecord r) => new() { Code = r["Code"]?.ToString() ?? string.Empty, Name = r["Name"]?.ToString() ?? string.Empty, PlayerId = r["U_ID_PLAYER"]?.ToString() ?? string.Empty, Team = r["U_TEAM"]?.ToString() ?? string.Empty, Matches = ToDecimal(r["U_MATCHES"]), Points = ToDecimal(r["U_POINTS"]), GoalDifference = ToDecimal(r["U_DIFF_GOALS"]), TablePosition = ToDecimal(r["U_TB_POSITION"]), Status = r["U_ESTADO"]?.ToString() ?? string.Empty };
         private static CupMatch MapMatch(IDataRecord r) => new() { Code = r["Code"]?.ToString() ?? string.Empty, Name = r["Name"]?.ToString() ?? string.Empty, MatchDate = r["U_MATCH_DATE"] == DBNull.Value ? null : Convert.ToDateTime(r["U_MATCH_DATE"]), MatchTime = r["U_MATCH_TIME"] == DBNull.Value ? null : Convert.ToInt16(r["U_MATCH_TIME"]), Player1 = r["U_PLAYER1"]?.ToString() ?? string.Empty, Player2 = r["U_PLAYER2"]?.ToString() ?? string.Empty, GoalsPlayer1 = ToNullableDecimal(r["U_GOAL_P1"]), GoalsPlayer2 = ToNullableDecimal(r["U_GOAL_P2"]), Observation = r["U_OBSERVATION"]?.ToString() ?? string.Empty };
+        private static WorldCupCountry MapWorldCupCountry(IDataRecord r) => new() { Code = r["Code"] == DBNull.Value ? null : Convert.ToInt32(r["Code"]), Name = r["Name"]?.ToString() ?? string.Empty, CountryCode = r["U_COD_PAIS"]?.ToString() ?? string.Empty, CountryName = r["U_NOMB_PAIS"]?.ToString() ?? string.Empty };
         private static decimal ToDecimal(object value) => value == DBNull.Value ? 0 : Convert.ToDecimal(value);
         private static decimal? ToNullableDecimal(object value) => value == DBNull.Value ? null : Convert.ToDecimal(value);
     }
