@@ -333,3 +333,60 @@ body {
             font-size: 18px;
         }
 }
+
+.auth-password-page {
+    grid-template-rows: 1fr;
+}
+
+.auth-password-brand-content {
+    display: grid;
+    gap: 24px;
+    justify-items: center;
+}
+
+.auth-password-details {
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 18px;
+    color: var(--white);
+    max-width: 440px;
+    padding: 18px 22px;
+    text-align: left;
+}
+
+.auth-password-details span {
+    display: block;
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.auth-password-details strong {
+    display: block;
+    font-size: 18px;
+    line-height: 1.35;
+}
+
+.password-card {
+    padding-top: 56px;
+}
+
+.password-header p {
+    color: #666666;
+    display: block;
+    font-size: 16px;
+    font-weight: 700;
+    margin: 10px 0 0;
+}
+
+@media (max-width: 640px) {
+    .auth-password-details {
+        text-align: center;
+    }
+
+    .password-card {
+        padding-top: 42px;
+    }
+}
