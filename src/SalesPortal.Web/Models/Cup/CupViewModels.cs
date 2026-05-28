@@ -23,6 +23,7 @@ namespace SalesPortal.Web.Models.Cup
     public sealed class AdminCupPlayersViewModel
     {
         public IReadOnlyList<CompetitorFormViewModel> Competitors { get; set; } = Array.Empty<CompetitorFormViewModel>();
+        public IReadOnlyList<CountryFormViewModel> Countries { get; set; } = Array.Empty<CountryFormViewModel>();
         public CompetitorFormViewModel Competitor { get; set; } = new();
     }
 

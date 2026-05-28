@@ -122,9 +122,17 @@ public sealed class AdminCupController : Controller
     {
         var tenant = _tenantResolver.ResolveByHost(HttpContext.Request.Host.Value);
         var competitors = await _cupRepository.GetCompetitorsAsync(tenant, cancellationToken);
+        var countries = await _cupRepository.GetWorldCupCountriesAsync(tenant, cancellationToken);
 
         return new AdminCupPlayersViewModel
         {
+            Countries = countries.Select(c => new CountryFormViewModel
+            {
+                Code = c.Code,
+                Name = c.Name,
+                CountryCode = c.CountryCode,
+                CountryName = c.CountryName
+            }).ToList(),
             Competitors = competitors.Select(c => new CompetitorFormViewModel
             {
                 Code = c.Code,

@@ -27,6 +27,7 @@ public sealed class HomeController : Controller
 
         var competitors = await _cupRepository.GetCompetitorsAsync(tenant, cancellationToken);
         var matches = await _cupRepository.GetMatchesAsync(tenant, cancellationToken);
+        var countries = await _cupRepository.GetWorldCupCountriesAsync(tenant, cancellationToken);
         var currentCompetitor = competitors.FirstOrDefault(c => string.Equals(c.PlayerId, playerId, StringComparison.OrdinalIgnoreCase));
         var standingRows = competitors
             .Select(competitor =>
@@ -54,6 +55,7 @@ public sealed class HomeController : Controller
             .ToList();
 
         var currentGoals = currentCompetitor == null ? (For: 0m, Against: 0m) : CalculateGoals(currentCompetitor, matches);
+        var assignedCountry = currentCompetitor == null ? null : FindCountryByTeam(currentCompetitor.Team, countries);
         var maxGoals = standingRows.Count == 0 ? 0 : standingRows.Max(row => row.GoalsFor);
 
         var model = new DashboardViewModel
@@ -61,6 +63,8 @@ public sealed class HomeController : Controller
             UserName = User.Identity?.Name ?? string.Empty,
             RoleCode = role,
             Team = currentCompetitor?.Team ?? "Sin equipo asignado",
+            CountryCode = assignedCountry?.CountryCode ?? string.Empty,
+            CountryName = assignedCountry?.CountryName ?? currentCompetitor?.Team ?? "Sin país asignado",
             PlayerPoints = currentCompetitor?.Points ?? 0,
             PlayerMatches = currentCompetitor?.Matches ?? 0,
             PlayerGoalDifference = currentCompetitor?.GoalDifference ?? 0,
@@ -76,6 +80,17 @@ public sealed class HomeController : Controller
         };
 
         return View(model);
+    }
+
+    private static SalesPortal.Domain.Cup.WorldCupCountry? FindCountryByTeam(string team, IReadOnlyList<SalesPortal.Domain.Cup.WorldCupCountry> countries)
+    {
+        if (string.IsNullOrWhiteSpace(team))
+            return null;
+
+        return countries.FirstOrDefault(country =>
+            string.Equals(country.CountryName, team, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(country.CountryCode, team, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(country.Name, team, StringComparison.OrdinalIgnoreCase));
     }
 
     private static (decimal For, decimal Against) CalculateGoals(SalesPortal.Domain.Cup.Competitor competitor, IReadOnlyList<SalesPortal.Domain.Cup.CupMatch> matches)

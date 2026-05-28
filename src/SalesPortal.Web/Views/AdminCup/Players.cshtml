@@ -1,6 +1,14 @@
 @model SalesPortal.Web.Models.Cup.AdminCupPlayersViewModel
 @{
     ViewData["Title"] = "Administración - Jugadores";
+    var assignableCountries = Model.Countries
+        .Where(country => !string.IsNullOrWhiteSpace(country.CountryCode) && !string.IsNullOrWhiteSpace(country.CountryName))
+        .ToList();
+    var countriesJson = System.Text.Json.JsonSerializer.Serialize(assignableCountries.Select(country => new
+    {
+        code = country.CountryCode,
+        name = country.CountryName
+    }));
 }
 
 <div class="admin-module-header">
@@ -25,7 +33,10 @@
         <input asp-for="Competitor.Code" class="cup-input" placeholder="Código" />
         <input asp-for="Competitor.Name" class="cup-input" placeholder="Nombre" />
         <input asp-for="Competitor.PlayerId" class="cup-input" placeholder="ID jugador / CardCode" />
-        <input asp-for="Competitor.Team" class="cup-input" placeholder="Equipo" />
+        <div class="team-assignment-field">
+            <input asp-for="Competitor.Team" class="cup-input" placeholder="País / equipo asignado" />
+            <button type="button" class="btn btn-outline" id="assignRandomCountryButton" disabled="@(assignableCountries.Count == 0)">Asignar país aleatorio</button>
+        </div>
         <input asp-for="Competitor.Matches" class="cup-input" placeholder="Partidos" />
         <input asp-for="Competitor.Points" class="cup-input" placeholder="Puntos" />
         <input asp-for="Competitor.GoalDifference" class="cup-input" placeholder="Diferencia goles" />
@@ -43,7 +54,7 @@
 </div>
 <div class="table-wrapper admin-table">
     <table>
-        <thead><tr><th>Código</th><th>Nombre</th><th>ID jugador</th><th>Equipo</th><th>PJ</th><th>Pts</th><th>DG</th><th>Pos.</th><th>Estado</th></tr></thead>
+        <thead><tr><th>Código</th><th>Nombre</th><th>ID jugador</th><th>País / equipo</th><th>PJ</th><th>Pts</th><th>DG</th><th>Pos.</th><th>Estado</th></tr></thead>
         <tbody>
         @foreach (var competitor in Model.Competitors)
         {
@@ -52,3 +63,56 @@
         </tbody>
     </table>
 </div>
+
+<div class="modal-overlay" id="countryAssignmentModal" role="dialog" aria-modal="true" aria-labelledby="countryAssignmentTitle" hidden>
+    <div class="modal-card country-assignment-modal">
+        <button type="button" class="modal-close" id="closeCountryAssignmentModal" aria-label="Cerrar">×</button>
+        <span class="eyebrow">Asignación aleatoria</span>
+        <h2 id="countryAssignmentTitle">Su país asignado aleatoriamente es</h2>
+        <img id="assignedCountryFlag" class="country-flag country-flag-modal" alt="" />
+        <strong id="assignedCountryName"></strong>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const countries = @Html.Raw(countriesJson);
+            const assignButton = document.getElementById('assignRandomCountryButton');
+            const teamInput = document.getElementById('Competitor_Team');
+            const modal = document.getElementById('countryAssignmentModal');
+            const closeButton = document.getElementById('closeCountryAssignmentModal');
+            const countryName = document.getElementById('assignedCountryName');
+            const countryFlag = document.getElementById('assignedCountryFlag');
+
+            const closeModal = () => {
+                modal.hidden = true;
+            };
+
+            assignButton?.addEventListener('click', () => {
+                if (countries.length === 0) {
+                    return;
+                }
+
+                const assignedCountry = countries[Math.floor(Math.random() * countries.length)];
+                teamInput.value = assignedCountry.name;
+                countryName.textContent = assignedCountry.name;
+                countryFlag.src = `/imgs/banderas/${assignedCountry.code}.png`;
+                countryFlag.alt = `Bandera de ${assignedCountry.name}`;
+                modal.hidden = false;
+            });
+
+            closeButton?.addEventListener('click', closeModal);
+            modal?.addEventListener('click', event => {
+                if (event.target === modal) {
+                    closeModal();
+                }
+            });
+            document.addEventListener('keydown', event => {
+                if (event.key === 'Escape' && !modal.hidden) {
+                    closeModal();
+                }
+            });
+        })();
+    </script>
+}

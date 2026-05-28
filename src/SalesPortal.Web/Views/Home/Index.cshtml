@@ -8,8 +8,15 @@
     <div>
         <span class="eyebrow">Resumen competición</span>
         <h2>Hola, @Model.UserName</h2>
-        <p>Rol: <strong>@Model.RoleName</strong> · Equipo: <strong>@Model.Team</strong></p>
+        <p>Rol: <strong>@Model.RoleName</strong> · País: <strong>@Model.CountryName</strong></p>
     </div>
+    @if (!string.IsNullOrWhiteSpace(Model.CountryFlagPath))
+    {
+        <div class="hero-country-card" aria-label="País asignado: @Model.CountryName">
+            <img src="@Model.CountryFlagPath" alt="Bandera de @Model.CountryName" class="country-flag country-flag-hero" onerror="this.closest('.hero-country-card').style.display='none';" />
+            <span>@Model.CountryName</span>
+        </div>
+    }
 </div>
 
 <div class="dashboard-grid dashboard-grid-four">
