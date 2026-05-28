@@ -2,101 +2,112 @@
 
 @{
     ViewData["Title"] = "Inicio";
-    var maxMonthlyValue = Model.MonthlySales.Count == 0 ? 0 : Model.MonthlySales.Max(month => month.Amount);
 }
 
-<div class="dashboard-hero">
+<div class="dashboard-hero cup-hero">
     <div>
-        <span class="eyebrow">Resumen competicion</span>
-        <h2>Hola, @User.Identity?.Name</h2>
-        @* <p>Consulta rápidamente tus pedidos recientes, el comportamiento de compra y las oportunidades para crear nuevas órdenes.</p> *@
-    </div>
-    <div class="dashboard-actions">
-        @* <a class="btn btn-light" asp-controller="Orders" asp-action="Index">Ver pedidos</a>
-        <a class="btn btn-primary" asp-controller="Orders" asp-action="Create">Nuevo pedido</a> *@
+        <span class="eyebrow">Resumen competición</span>
+        <h2>Hola, @Model.UserName</h2>
+        <p>Rol: <strong>@Model.RoleName</strong> · Equipo: <strong>@Model.Team</strong></p>
     </div>
 </div>
 
-@* <div class="dashboard-grid dashboard-grid-four">
+<div class="dashboard-grid dashboard-grid-four">
     <div class="stat-card stat-card-accent">
-        <span>Pedidos últimos 30 días</span>
-        <strong>@Model.OrdersLast30Days</strong>
-        <p>@Model.TotalAmountLast30Days.ToString("C") facturados en el periodo</p>
+        <span>Puntos</span>
+        <strong>@Model.PlayerPoints.ToString("0")</strong>
+        <p>Puntaje actual del jugador.</p>
     </div>
-
     <div class="stat-card">
-        <span>Promedio Pedido</span>
-        <strong>@Model.AverageTicketLast30Days.ToString("C")</strong>
-        <p>Promedio por pedido de los últimos 30 días</p>
+        <span>Partidos</span>
+        <strong>@Model.PlayerMatches.ToString("0")</strong>
+        <p>Partidos registrados.</p>
     </div>
-
     <div class="stat-card">
-        <span>Productos disponibles</span>
-        <strong>@Model.AvailableProducts</strong>
-        <p>Artículos activos para crear pedidos</p>
+        <span>Goles a favor</span>
+        <strong>@Model.GoalsFor.ToString("0")</strong>
+        <p>Calculados según resultados.</p>
     </div>
-
     <div class="stat-card">
-        <span>Último pedido</span>
-        <strong>@(Model.LastOrderDate?.ToString("dd/MM") ?? "--")</strong>
-        <p>@Model.TotalOrders pedidos consultados en 6 meses</p>
+        <span>Goles en contra</span>
+        <strong>@Model.GoalsAgainst.ToString("0")</strong>
+        <p>Diferencia: @Model.PlayerGoalDifference.ToString("+0;-0;0")</p>
     </div>
-</div> *@
+</div>
 
-@* <div class="analytics-grid">
+<div class="analytics-grid">
     <section class="analytics-card">
         <div class="section-title compact-title">
             <div>
-                <span class="eyebrow">Tendencia</span>
-                <h2>Compras por mes</h2>
+                <span class="eyebrow">Tabla</span>
+                <h2>Tabla de posiciones</h2>
             </div>
         </div>
-
-        @if (Model.MonthlySales.Count == 0 || maxMonthlyValue == 0)
-        {
-            <div class="dashboard-empty-state">Aún no hay ventas recientes para graficar.</div>
-        }
-        else
-        {
-            <div class="bar-chart" aria-label="Compras por mes">
-                @foreach (var month in Model.MonthlySales)
-                {
-                    <div class="bar-chart-item">
-                        <div class="bar-chart-track">
-                            <span class="bar-chart-bar" style="height: @month.Percentage%"></span>
-                        </div>
-                        <strong>@month.Amount.ToString("C0")</strong>
-                        <span>@month.Label</span>
-                    </div>
-                }
-            </div>
-        }
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Pos.</th>
+                        <th>Jugador</th>
+                        <th>Equipo</th>
+                        <th>PJ</th>
+                        <th>GF</th>
+                        <th>GC</th>
+                        <th>DG</th>
+                        <th>Pts</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Standings.Count == 0)
+                    {
+                        <tr><td colspan="9" class="empty-row">Aún no hay competidores registrados.</td></tr>
+                    }
+                    else
+                    {
+                        foreach (var row in Model.Standings)
+                        {
+                            <tr class="@(row.IsCurrentUser ? "current-player-row" : string.Empty)">
+                                <td class="text-strong">@(row.Position == 0 ? "--" : row.Position.ToString("0"))</td>
+                                <td>@row.Name</td>
+                                <td>@row.Team</td>
+                                <td>@row.Matches.ToString("0")</td>
+                                <td>@row.GoalsFor.ToString("0")</td>
+                                <td>@row.GoalsAgainst.ToString("0")</td>
+                                <td>@row.GoalDifference.ToString("+0;-0;0")</td>
+                                <td class="text-strong">@row.Points.ToString("0")</td>
+                                <td>@(string.IsNullOrWhiteSpace(row.Status) ? "Activo" : row.Status)</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
     </section>
 
     <section class="analytics-card">
         <div class="section-title compact-title">
             <div>
-                <span class="eyebrow">Seguimiento</span>
-                <h2>Pedidos por estado</h2>
+                <span class="eyebrow">Ataque</span>
+                <h2>Goles a favor</h2>
             </div>
         </div>
-
-        @if (Model.OrdersByStatus.Count == 0)
+        @if (Model.GoalChart.Count == 0)
         {
-            <div class="dashboard-empty-state">No hay estados disponibles por el momento.</div>
+            <div class="dashboard-empty-state">No hay resultados para graficar.</div>
         }
         else
         {
             <div class="status-list">
-                @foreach (var status in Model.OrdersByStatus)
+                @foreach (var row in Model.GoalChart)
                 {
                     <div class="status-row">
                         <div class="status-row-header">
-                            <strong>@status.Status</strong>
-                            <span>@status.Count pedido@(status.Count == 1 ? string.Empty : "s")</span>
+                            <strong>@row.Team</strong>
+                            <span>@row.GoalsFor.ToString("0") goles</span>
                         </div>
                         <div class="progress-track" aria-hidden="true">
-                            <span style="width: @status.Percentage%"></span>
+                            <span style="width: @row.Percentage%"></span>
                         </div>
                     </div>
                 }
@@ -104,50 +115,3 @@
         }
     </section>
 </div>
-
-<div class="section-title dashboard-table-title">
-    <div>
-        <span class="eyebrow">Actividad</span>
-        <h2>Últimos pedidos</h2>
-    </div>
-    <a class="btn btn-outline" asp-controller="Orders" asp-action="Index">Ver listado completo</a>
-</div>
-
-<div class="table-wrapper dashboard-orders-grid">
-    <table>
-        <thead>
-            <tr>
-                <th>#Num pedido</th>
-                <th>Fecha pedido</th>
-                <th>Estado</th>
-                <th>Total</th>
-                <th>Dirección envío</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (Model.RecentOrders.Count == 0)
-            {
-                <tr>
-                    <td colspan="6" class="empty-row">Sin pedidos recientes por el momento.</td>
-                </tr>
-            }
-            else
-            {
-                foreach (var order in Model.RecentOrders)
-                {
-                    <tr>
-                        <td class="text-strong">@order.DocNum</td>
-                        <td>@order.DocDate.ToString("dd/MM/yyyy")</td>
-                        <td>@(string.IsNullOrWhiteSpace(order.Status) ? "Sin estado" : order.Status)</td>
-                        <td>@order.DocTotal.ToString("C")</td>
-                        <td>@(string.IsNullOrWhiteSpace(order.ShippingAddress) ? "Sin dirección" : order.ShippingAddress)</td>
-                        <td>
-                            <a class="btn btn-outline" asp-controller="Orders" asp-action="Preview" asp-route-docEntry="@order.DocEntry">Ver orden</a>
-                        </td>
-                    </tr>
-                }
-            }
-        </tbody>
-    </table>
-</div> *@

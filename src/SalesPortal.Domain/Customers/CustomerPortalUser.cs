@@ -15,6 +15,8 @@ namespace SalesPortal.Domain.Customers
 
         public bool MustChangePassword { get; set; }
 
+        public string Role { get; set; } = string.Empty;
+
         public bool IsActive { get; set; }
     }
 }

@@ -62,7 +62,8 @@ namespace SalesPortal.Application.Auth.Services
                 UserWeb = customer.UserWeb,
                 EmailWeb = customer.EmailWeb,
                 TenantCode = tenant.Code,
-                MustChangePassword = customer.MustChangePassword
+                MustChangePassword = customer.MustChangePassword,
+                Role = customer.Role
             };
 
             return Result<LoginResult>.Success(result);

@@ -10,5 +10,6 @@ namespace SalesPortal.Shared.Constants
         public const string EmailWeb = "U_EmailWeb";
         public const string PwdWeb = "U_PwdWeb";
         public const string ChangePwd = "U_ChangePwd";
+        public const string Role = "U_Role";
     }
 }

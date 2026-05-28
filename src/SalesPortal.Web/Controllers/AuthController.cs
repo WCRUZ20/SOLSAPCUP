@@ -63,7 +63,9 @@ namespace SalesPortal.Web.Controllers
             new Claim(PortalClaimTypes.CardCode, login.CardCode),
             new Claim(PortalClaimTypes.CardName, login.CardName),
             new Claim(PortalClaimTypes.TenantCode, login.TenantCode),
-            new Claim(PortalClaimTypes.MustChangePassword, login.MustChangePassword ? "Y" : "N")
+            new Claim(PortalClaimTypes.MustChangePassword, login.MustChangePassword ? "Y" : "N"),
+            new Claim(PortalClaimTypes.Role, login.Role),
+            new Claim(ClaimTypes.Role, login.Role == "A" ? "Admin" : "Player")
         };
 
             var identity = new ClaimsIdentity(

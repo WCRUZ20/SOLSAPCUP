@@ -10,5 +10,6 @@ namespace SalesPortal.Shared.Security
         public const string CardName = "CardName";
         public const string TenantCode = "TenantCode";
         public const string MustChangePassword = "MustChangePassword";
+        public const string Role = "Role";
     }
 }

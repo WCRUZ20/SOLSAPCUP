@@ -11,6 +11,7 @@ namespace SalesPortal.Application.Auth.Dtos
         public string UserWeb { get; set; } = string.Empty;
         public string EmailWeb { get; set; } = string.Empty;
         public string TenantCode { get; set; } = string.Empty;
+        public string Role { get; set; } = string.Empty;
         public bool MustChangePassword { get; set; }
     }
 }

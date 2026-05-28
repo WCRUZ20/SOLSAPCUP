@@ -1,0 +1,50 @@
+@model SalesPortal.Web.Models.Cup.MatchesViewModel
+@{
+    ViewData["Title"] = "Mis partidos";
+}
+
+<div class="section-title cup-title">
+    <div>
+        <span class="eyebrow">Calendario</span>
+        <h2>Partidos asignados</h2>
+    </div>
+</div>
+
+<div class="table-wrapper cup-grid">
+    <table>
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Partido</th>
+                <th>Fecha</th>
+                <th>Hora</th>
+                <th>Jugador 1</th>
+                <th>Jugador 2</th>
+                <th>Resultado</th>
+                <th>Observación</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Matches.Count == 0)
+            {
+                <tr><td colspan="8" class="empty-row">No tienes partidos asignados por el momento.</td></tr>
+            }
+            else
+            {
+                foreach (var match in Model.Matches)
+                {
+                    <tr>
+                        <td class="text-strong">@match.Code</td>
+                        <td>@match.Name</td>
+                        <td>@(match.MatchDate?.ToString("dd/MM/yyyy") ?? "Por definir")</td>
+                        <td>@(match.MatchTime?.ToString("0000") ?? "--")</td>
+                        <td>@match.Player1</td>
+                        <td>@match.Player2</td>
+                        <td class="text-strong">@(match.GoalsPlayer1.HasValue || match.GoalsPlayer2.HasValue ? $"{match.GoalsPlayer1?.ToString("0") ?? "-"} - {match.GoalsPlayer2?.ToString("0") ?? "-"}" : "Pendiente")</td>
+                        <td>@match.Observation</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>

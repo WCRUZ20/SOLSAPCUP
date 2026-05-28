@@ -1,42 +1,40 @@
-using System;
-using System.Collections.Generic;
-
 namespace SalesPortal.Web.Models.Home
 {
     public sealed class DashboardViewModel
     {
-        public int TotalOrders { get; set; }
-        public int OrdersLast30Days { get; set; }
-        public decimal TotalAmountLast30Days { get; set; }
-        public decimal AverageTicketLast30Days { get; set; }
-        public int AvailableProducts { get; set; }
-        public DateTime? LastOrderDate { get; set; }
-        public IReadOnlyList<DashboardMonthAmountViewModel> MonthlySales { get; set; } = Array.Empty<DashboardMonthAmountViewModel>();
-        public IReadOnlyList<DashboardStatusSummaryViewModel> OrdersByStatus { get; set; } = Array.Empty<DashboardStatusSummaryViewModel>();
-        public IReadOnlyList<DashboardRecentOrderViewModel> RecentOrders { get; set; } = Array.Empty<DashboardRecentOrderViewModel>();
+        public string UserName { get; set; } = string.Empty;
+        public string RoleCode { get; set; } = string.Empty;
+        public string RoleName => RoleCode == "A" ? "ADMIN" : "PLAYER";
+        public string Team { get; set; } = string.Empty;
+        public decimal PlayerPoints { get; set; }
+        public decimal PlayerMatches { get; set; }
+        public decimal PlayerGoalDifference { get; set; }
+        public decimal GoalsFor { get; set; }
+        public decimal GoalsAgainst { get; set; }
+        public IReadOnlyList<StandingRowViewModel> Standings { get; set; } = Array.Empty<StandingRowViewModel>();
+        public IReadOnlyList<GoalChartRowViewModel> GoalChart { get; set; } = Array.Empty<GoalChartRowViewModel>();
     }
 
-    public sealed class DashboardMonthAmountViewModel
+    public sealed class StandingRowViewModel
     {
-        public string Label { get; set; } = string.Empty;
-        public decimal Amount { get; set; }
-        public int Percentage { get; set; }
-    }
-
-    public sealed class DashboardStatusSummaryViewModel
-    {
+        public string Code { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string PlayerId { get; set; } = string.Empty;
+        public string Team { get; set; } = string.Empty;
+        public decimal Matches { get; set; }
+        public decimal Points { get; set; }
+        public decimal GoalDifference { get; set; }
+        public decimal Position { get; set; }
         public string Status { get; set; } = string.Empty;
-        public int Count { get; set; }
-        public int Percentage { get; set; }
+        public decimal GoalsFor { get; set; }
+        public decimal GoalsAgainst { get; set; }
+        public bool IsCurrentUser { get; set; }
     }
 
-    public sealed class DashboardRecentOrderViewModel
+    public sealed class GoalChartRowViewModel
     {
-        public int DocEntry { get; set; }
-        public int DocNum { get; set; }
-        public DateTime DocDate { get; set; }
-        public decimal DocTotal { get; set; }
-        public string Status { get; set; } = string.Empty;
-        public string ShippingAddress { get; set; } = string.Empty;
+        public string Team { get; set; } = string.Empty;
+        public decimal GoalsFor { get; set; }
+        public int Percentage { get; set; }
     }
 }

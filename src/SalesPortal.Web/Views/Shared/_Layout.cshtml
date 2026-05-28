@@ -13,31 +13,21 @@
 <body>
     <div class="app-shell">
         <aside class="sidebar">
-            <a class="brand" asp-controller="Home" asp-action="Index" aria-label="Portal Ventas - Inicio">
-                <img class="brand-logo-sb" src="~/img/solsapcuplogosf.png" alt="Portal Ventas" asp-append-version="true" />
+            <a class="brand" asp-controller="Home" asp-action="Index" aria-label="SOLSAP CUP - Inicio">
+                <img class="brand-logo-sb" src="~/img/solsapcuplogosf.png" alt="SOLSAP CUP" asp-append-version="true" />
             </a>
 
             @{
                 var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
-                var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
-                var isOrdersModuleActive = currentController == "Orders";
             }
 
             <nav class="menu" aria-label="Navegación principal">
                 <a class="menu-item @(currentController == "Home" ? "active" : string.Empty)" asp-controller="Home" asp-action="Index">Inicio</a>
-                @* <a class="menu-item" href="#">Productos</a> *@
-                @* <div class="menu-module @(isOrdersModuleActive ? "active" : string.Empty)">
-                    <a class="menu-item menu-parent @(isOrdersModuleActive ? "active" : string.Empty)" asp-controller="Orders" asp-action="Index" aria-expanded="@(isOrdersModuleActive ? "true" : "false")">Pedidos</a>
-
-                    @if (isOrdersModuleActive)
-                    {
-                        <div class="submenu" aria-label="Submódulos de pedidos">
-                            <a class="submenu-item @(currentAction == "Index" || currentAction == "Create" || currentAction == "Preview" ? "active" : string.Empty)" asp-controller="Orders" asp-action="Index">Listado pedidos</a>
-                            <a class="submenu-item @(currentAction == "BulkUpload" ? "active" : string.Empty)" asp-controller="Orders" asp-action="BulkUpload">Carga masiva pedidos</a>
-                        </div>
-                    }
-                </div> *@
-                @* <a class="menu-item" href="#">Estado de cuenta</a> *@
+                <a class="menu-item @(currentController == "Matches" ? "active" : string.Empty)" asp-controller="Matches" asp-action="Index">Mis partidos</a>
+                @if (User.IsInRole("Admin"))
+                {
+                    <a class="menu-item @(currentController == "AdminCup" ? "active" : string.Empty)" asp-controller="AdminCup" asp-action="Index">Administración</a>
+                }
             </nav>
 
             <div class="sidebar-session">

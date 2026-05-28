@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using SalesPortal.Application.Abstractions.Persistence;
 using SalesPortal.Shared.Security;
 using SalesPortal.Web.Models.Home;
-using System.Globalization;
 using System.Security.Claims;
 
 namespace SalesPortal.Web.Controllers;
@@ -12,120 +11,104 @@ namespace SalesPortal.Web.Controllers;
 public sealed class HomeController : Controller
 {
     private readonly ITenantResolver _tenantResolver;
-    private readonly IOrderRepository _orderRepository;
+    private readonly ICupRepository _cupRepository;
 
-    public HomeController(
-        ITenantResolver tenantResolver,
-        IOrderRepository orderRepository)
+    public HomeController(ITenantResolver tenantResolver, ICupRepository cupRepository)
     {
         _tenantResolver = tenantResolver;
-        _orderRepository = orderRepository;
+        _cupRepository = cupRepository;
     }
 
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {
-        var cardCode = User.FindFirstValue(PortalClaimTypes.CardCode);
-
-        if (string.IsNullOrWhiteSpace(cardCode))
-            return RedirectToAction("Login", "Auth");
-
+        var playerId = User.FindFirstValue(PortalClaimTypes.CardCode) ?? string.Empty;
+        var role = User.FindFirstValue(PortalClaimTypes.Role) ?? "P";
         var tenant = _tenantResolver.ResolveByHost(HttpContext.Request.Host.Value);
-        var today = DateTime.Today;
-        var last30Days = today.AddDays(-30);
-        var chartStart = new DateTime(today.Year, today.Month, 1).AddMonths(-5);
 
-        var orders = await _orderRepository.GetCustomerOrdersAsync(
-            tenant,
-            cardCode,
-            chartStart,
-            today,
-            null,
-            cancellationToken);
-
-        var products = await _orderRepository.GetSalesItemsAsync(tenant, cardCode, cancellationToken);
-        var recentOrders = orders
-            .OrderByDescending(order => order.DocDate)
-            .ThenByDescending(order => order.DocNum)
-            .Take(5)
-            .Select(order => new DashboardRecentOrderViewModel
+        var competitors = await _cupRepository.GetCompetitorsAsync(tenant, cancellationToken);
+        var matches = await _cupRepository.GetMatchesAsync(tenant, cancellationToken);
+        var currentCompetitor = competitors.FirstOrDefault(c => string.Equals(c.PlayerId, playerId, StringComparison.OrdinalIgnoreCase));
+        var standingRows = competitors
+            .Select(competitor =>
             {
-                DocEntry = order.DocEntry,
-                DocNum = order.DocNum,
-                DocDate = order.DocDate,
-                DocTotal = order.DocTotal,
-                Status = order.Status,
-                ShippingAddress = order.ShippingAddress
+                var goals = CalculateGoals(competitor, matches);
+                return new StandingRowViewModel
+                {
+                    Code = competitor.Code,
+                    Name = competitor.Name,
+                    PlayerId = competitor.PlayerId,
+                    Team = competitor.Team,
+                    Matches = competitor.Matches,
+                    Points = competitor.Points,
+                    GoalDifference = competitor.GoalDifference,
+                    Position = competitor.TablePosition,
+                    Status = competitor.Status,
+                    GoalsFor = goals.For,
+                    GoalsAgainst = goals.Against,
+                    IsCurrentUser = string.Equals(competitor.PlayerId, playerId, StringComparison.OrdinalIgnoreCase)
+                };
             })
+            .OrderBy(row => row.Position == 0 ? decimal.MaxValue : row.Position)
+            .ThenByDescending(row => row.Points)
+            .ThenByDescending(row => row.GoalDifference)
             .ToList();
 
-        var ordersLast30Days = orders
-            .Where(order => order.DocDate.Date >= last30Days && order.DocDate.Date <= today)
-            .ToList();
-        var totalAmountLast30Days = ordersLast30Days.Sum(order => order.DocTotal);
-        var monthlySales = BuildMonthlySales(orders, chartStart, today);
-        var statusSummary = BuildStatusSummary(orders);
+        var currentGoals = currentCompetitor == null ? (For: 0m, Against: 0m) : CalculateGoals(currentCompetitor, matches);
+        var maxGoals = standingRows.Count == 0 ? 0 : standingRows.Max(row => row.GoalsFor);
 
         var model = new DashboardViewModel
         {
-            TotalOrders = orders.Count,
-            OrdersLast30Days = ordersLast30Days.Count,
-            TotalAmountLast30Days = totalAmountLast30Days,
-            AverageTicketLast30Days = ordersLast30Days.Count == 0 ? 0 : totalAmountLast30Days / ordersLast30Days.Count,
-            AvailableProducts = products.Count,
-            LastOrderDate = orders.Count == 0 ? null : orders.Max(order => order.DocDate),
-            MonthlySales = monthlySales,
-            OrdersByStatus = statusSummary,
-            RecentOrders = recentOrders
+            UserName = User.Identity?.Name ?? string.Empty,
+            RoleCode = role,
+            Team = currentCompetitor?.Team ?? "Sin equipo asignado",
+            PlayerPoints = currentCompetitor?.Points ?? 0,
+            PlayerMatches = currentCompetitor?.Matches ?? 0,
+            PlayerGoalDifference = currentCompetitor?.GoalDifference ?? 0,
+            GoalsFor = currentGoals.For,
+            GoalsAgainst = currentGoals.Against,
+            Standings = standingRows,
+            GoalChart = standingRows.Take(8).Select(row => new GoalChartRowViewModel
+            {
+                Team = row.Team,
+                GoalsFor = row.GoalsFor,
+                Percentage = maxGoals <= 0 ? 0 : Math.Max(8, (int)Math.Round(row.GoalsFor / maxGoals * 100))
+            }).ToList()
         };
 
         return View(model);
     }
 
-    private static IReadOnlyList<DashboardMonthAmountViewModel> BuildMonthlySales(
-        IReadOnlyList<SalesPortal.Domain.Orders.CustomerOrder> orders,
-        DateTime chartStart,
-        DateTime today)
+    private static (decimal For, decimal Against) CalculateGoals(SalesPortal.Domain.Cup.Competitor competitor, IReadOnlyList<SalesPortal.Domain.Cup.CupMatch> matches)
     {
-        var months = Enumerable.Range(0, 6)
-            .Select(offset => new DateTime(chartStart.Year, chartStart.Month, 1).AddMonths(offset))
-            .Where(month => month <= new DateTime(today.Year, today.Month, 1))
-            .ToList();
-        var totalsByMonth = orders
-            .GroupBy(order => new DateTime(order.DocDate.Year, order.DocDate.Month, 1))
-            .ToDictionary(group => group.Key, group => group.Sum(order => order.DocTotal));
-        var maxAmount = totalsByMonth.Count == 0 ? 0 : totalsByMonth.Values.Max();
+        var goalsFor = 0m;
+        var goalsAgainst = 0m;
+        foreach (var match in matches)
+        {
+            var isPlayer1 = IsSamePlayer(match.Player1, competitor);
+            var isPlayer2 = IsSamePlayer(match.Player2, competitor);
+            if (!isPlayer1 && !isPlayer2)
+                continue;
 
-        return months
-            .Select(month =>
+            if (isPlayer1)
             {
-                totalsByMonth.TryGetValue(month, out var amount);
+                goalsFor += match.GoalsPlayer1 ?? 0;
+                goalsAgainst += match.GoalsPlayer2 ?? 0;
+            }
+            else if (isPlayer2)
+            {
+                goalsFor += match.GoalsPlayer2 ?? 0;
+                goalsAgainst += match.GoalsPlayer1 ?? 0;
+            }
+        }
 
-                return new DashboardMonthAmountViewModel
-                {
-                    Label = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(month.ToString("MMM", CultureInfo.CurrentCulture)),
-                    Amount = amount,
-                    Percentage = maxAmount <= 0 ? 0 : Math.Max(8, (int)Math.Round(amount / maxAmount * 100))
-                };
-            })
-            .ToList();
+        return (goalsFor, goalsAgainst);
     }
 
-    private static IReadOnlyList<DashboardStatusSummaryViewModel> BuildStatusSummary(
-        IReadOnlyList<SalesPortal.Domain.Orders.CustomerOrder> orders)
+    private static bool IsSamePlayer(string matchPlayer, SalesPortal.Domain.Cup.Competitor competitor)
     {
-        var totalOrders = orders.Count;
-
-        return orders
-            .GroupBy(order => string.IsNullOrWhiteSpace(order.Status) ? "Sin estado" : order.Status.Trim())
-            .OrderByDescending(group => group.Count())
-            .ThenBy(group => group.Key)
-            .Take(5)
-            .Select(group => new DashboardStatusSummaryViewModel
-            {
-                Status = group.Key,
-                Count = group.Count(),
-                Percentage = totalOrders == 0 ? 0 : Math.Max(6, (int)Math.Round(group.Count() / (decimal)totalOrders * 100))
-            })
-            .ToList();
+        return string.Equals(matchPlayer, competitor.PlayerId, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(matchPlayer, competitor.Code, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(matchPlayer, competitor.Name, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(matchPlayer, competitor.Team, StringComparison.OrdinalIgnoreCase);
     }
 }

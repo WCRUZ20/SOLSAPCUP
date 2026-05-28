@@ -31,6 +31,7 @@ namespace SalesPortal.Infrastructure.Persistence.Sap
                     {dialect.Identifier(SapUserFields.EmailWeb)} AS {dialect.Identifier("EmailWeb")},
                     {dialect.Identifier(SapUserFields.PwdWeb)} AS {dialect.Identifier("PasswordWeb")},
                     {dialect.Identifier(SapUserFields.ChangePwd)} AS {dialect.Identifier("ChangePwd")},
+                    {dialect.Identifier(SapUserFields.Role)} AS {dialect.Identifier("Role")},
                     {dialect.Identifier("validFor")}
                 FROM {dialect.Table("OCRD")}
                 WHERE 
@@ -70,6 +71,7 @@ namespace SalesPortal.Infrastructure.Persistence.Sap
                     {dialect.Identifier(SapUserFields.EmailWeb)} AS {dialect.Identifier("EmailWeb")},
                     {dialect.Identifier(SapUserFields.PwdWeb)} AS {dialect.Identifier("PasswordWeb")},
                     {dialect.Identifier(SapUserFields.ChangePwd)} AS {dialect.Identifier("ChangePwd")},
+                    {dialect.Identifier(SapUserFields.Role)} AS {dialect.Identifier("Role")},
                     {dialect.Identifier("validFor")}
                 FROM {dialect.Table("OCRD")}
                 WHERE 
@@ -139,8 +141,13 @@ namespace SalesPortal.Infrastructure.Persistence.Sap
                 EmailWeb = reader["EmailWeb"]?.ToString() ?? string.Empty,
                 PasswordWeb = reader["PasswordWeb"]?.ToString() ?? string.Empty,
                 MustChangePassword = (reader["ChangePwd"]?.ToString() ?? "N") == "Y",
+                Role = NormalizeRole(reader["Role"]?.ToString()),
                 IsActive = (reader["validFor"]?.ToString() ?? "N") == "Y"
             };
+        }
+        private static string NormalizeRole(string? role)
+        {
+            return string.Equals(role, "A", StringComparison.OrdinalIgnoreCase) ? "A" : "P";
         }
     }
 }

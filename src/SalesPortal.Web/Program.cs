@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using SalesPortal.Infrastructure;
 using SalesPortal.Web.Filters;
-using SalesPortal.Web.Services.Orders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,8 +11,6 @@ builder.Services.AddControllersWithViews(options =>
 
 builder.Services.AddInfrastructure();
 builder.Services.AddMemoryCache();
-builder.Services.AddSingleton<IOrderSubmissionCoordinator, OrderSubmissionCoordinator>();
-
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -27,7 +24,10 @@ builder.Services
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("Admin", policy => policy.RequireRole("Admin"));
+});
 
 var app = builder.Build();
 
