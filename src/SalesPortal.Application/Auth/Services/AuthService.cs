@@ -3,6 +3,8 @@ using SalesPortal.Application.Abstractions.Persistence;
 using SalesPortal.Application.Abstractions.Security;
 using SalesPortal.Application.Auth.Dtos;
 using SalesPortal.Application.Common;
+using SalesPortal.Domain.Cup;
+using SalesPortal.Domain.Tenants;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -13,15 +15,18 @@ namespace SalesPortal.Application.Auth.Services
     {
         private readonly ITenantResolver _tenantResolver;
         private readonly ICustomerRepository _customerRepository;
+        private readonly ICupRepository _cupRepository;
         private readonly IPasswordHasher _passwordHasher;
 
         public AuthService(
             ITenantResolver tenantResolver,
             ICustomerRepository customerRepository,
+            ICupRepository cupRepository,
             IPasswordHasher passwordHasher)
         {
             _tenantResolver = tenantResolver;
             _customerRepository = customerRepository;
+            _cupRepository = cupRepository;
             _passwordHasher = passwordHasher;
         }
 
@@ -55,6 +60,18 @@ namespace SalesPortal.Application.Auth.Services
             if (!passwordIsValid)
                 return Result<LoginResult>.Failure("Usuario o contraseña incorrectos.");
 
+            if (IsPlayer(customer.Role))
+            {
+                var assignmentResult = await EnsurePlayerCountryAssignmentAsync(
+                    tenant,
+                    customer.CardCode,
+                    customer.CardName,
+                    cancellationToken);
+
+                if (assignmentResult.IsFailure)
+                    return Result<LoginResult>.Failure(assignmentResult.Message);
+            }
+
             var result = new LoginResult
             {
                 CardCode = customer.CardCode,
@@ -67,6 +84,86 @@ namespace SalesPortal.Application.Auth.Services
             };
 
             return Result<LoginResult>.Success(result);
+        }
+
+        private async Task<Result> EnsurePlayerCountryAssignmentAsync(
+            Tenant tenant,
+            string playerId,
+            string playerName,
+            CancellationToken cancellationToken)
+        {
+            var currentCompetitor = await _cupRepository.GetCompetitorByPlayerIdAsync(
+                tenant,
+                playerId,
+                cancellationToken);
+
+            if (!string.IsNullOrWhiteSpace(currentCompetitor?.Team))
+                return Result.Success();
+
+            var countries = await _cupRepository.GetWorldCupCountriesAsync(tenant, cancellationToken);
+            if (countries.Count == 0)
+                return Result.Failure("No hay países disponibles para asignar al jugador.");
+
+            var competitors = await _cupRepository.GetCompetitorsAsync(tenant, cancellationToken);
+            var assignedTeams = competitors
+                .Where(competitor => !string.Equals(competitor.PlayerId, playerId, StringComparison.OrdinalIgnoreCase))
+                .Select(competitor => competitor.Team?.Trim())
+                .Where(team => !string.IsNullOrWhiteSpace(team))
+                .Select(team => team!)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var availableCountries = countries
+                .Where(country => GetCountryAssignmentKeys(country).Any())
+                .Where(country => !CountryIsAssigned(country, assignedTeams))
+                .ToList();
+
+            if (availableCountries.Count == 0)
+                return Result.Failure("No hay países disponibles sin asignar para este jugador.");
+
+            var selectedCountry = availableCountries[Random.Shared.Next(availableCountries.Count)];
+            var selectedTeam = GetCountryTeamName(selectedCountry);
+
+            await _cupRepository.SaveCompetitorAsync(tenant, new Competitor
+            {
+                Code = string.IsNullOrWhiteSpace(currentCompetitor?.Code) ? playerId : currentCompetitor.Code.Trim(),
+                Name = string.IsNullOrWhiteSpace(currentCompetitor?.Name) ? playerName : currentCompetitor.Name.Trim(),
+                PlayerId = playerId,
+                Team = selectedTeam,
+                Matches = currentCompetitor?.Matches ?? 0,
+                Points = currentCompetitor?.Points ?? 0,
+                GoalDifference = currentCompetitor?.GoalDifference ?? 0,
+                TablePosition = currentCompetitor?.TablePosition ?? 0,
+                Status = currentCompetitor?.Status ?? string.Empty
+            }, cancellationToken);
+
+            return Result.Success();
+        }
+
+        private static bool IsPlayer(string role)
+        {
+            return !string.Equals(role, "A", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool CountryIsAssigned(WorldCupCountry country, ISet<string> assignedTeams)
+        {
+            return GetCountryAssignmentKeys(country).Any(assignedTeams.Contains);
+        }
+
+        private static IEnumerable<string> GetCountryAssignmentKeys(WorldCupCountry country)
+        {
+            if (!string.IsNullOrWhiteSpace(country.CountryName))
+                yield return country.CountryName.Trim();
+
+            if (!string.IsNullOrWhiteSpace(country.CountryCode))
+                yield return country.CountryCode.Trim();
+
+            if (!string.IsNullOrWhiteSpace(country.Name))
+                yield return country.Name.Trim();
+        }
+
+        private static string GetCountryTeamName(WorldCupCountry country)
+        {
+            return GetCountryAssignmentKeys(country).First();
         }
 
         public async Task<Result> ChangePasswordAsync(
