@@ -5,6 +5,7 @@
     --gray: #f4f4f4;
     --white: #ffffff;
     --danger: #c0392b;
+    --success: #167a3a;
     --border: #dcdcdc;
     --orange: rgba(229, 95, 0, 0.8);
     --orange-overlay: rgba(248, 128, 41, 0.8);
@@ -188,11 +189,35 @@ body {
         transform: translateY(-1px);
     }
 
-.validation-summary {
-    color: var(--danger);
+.validation-summary,
+.success-summary {
     margin-bottom: 16px;
     font-weight: 700;
     text-align: center;
+}
+
+.validation-summary {
+    color: var(--danger);
+}
+
+.success-summary {
+    color: var(--success);
+}
+
+.auth-link-row {
+    margin-top: 18px;
+    text-align: center;
+}
+
+.auth-link-row a {
+    color: var(--black);
+    font-size: 15px;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.auth-link-row a:hover {
+    text-decoration: underline;
 }
 
 .field-error {

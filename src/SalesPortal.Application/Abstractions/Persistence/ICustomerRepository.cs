@@ -1,4 +1,5 @@
-﻿using SalesPortal.Domain.Customers;
+﻿using SalesPortal.Application.Auth.Dtos;
+using SalesPortal.Domain.Customers;
 using SalesPortal.Domain.Tenants;
 using System;
 using System.Collections.Generic;
@@ -16,6 +17,17 @@ namespace SalesPortal.Application.Abstractions.Persistence
         Task<CustomerPortalUser?> GetByCardCodeAsync(
             Tenant tenant,
             string cardCode,
+            CancellationToken cancellationToken);
+
+        Task<bool> ExistsByCardCodeOrIdentificationAsync(
+            Tenant tenant,
+            string cardCode,
+            string identificationNumber,
+            CancellationToken cancellationToken);
+
+        Task CreatePortalCustomerAsync(
+            Tenant tenant,
+            PortalCustomerRegistration registration,
             CancellationToken cancellationToken);
 
         Task UpdatePasswordAsync(

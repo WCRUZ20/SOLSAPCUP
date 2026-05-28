@@ -25,6 +25,11 @@
                 <form asp-action="Login" asp-controller="Auth" method="post" autocomplete="off">
                     @Html.AntiForgeryToken()
 
+                    @if (TempData["Success"] is string successMessage)
+                    {
+                        <div class="success-summary">@successMessage</div>
+                    }
+
                     <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
 
                     <div class="form-group">
@@ -44,6 +49,10 @@
                     <button type="submit" class="btn-login">
                         Iniciar sesión
                     </button>
+
+                    <div class="auth-link-row">
+                        <a asp-action="Register" asp-controller="Auth">Crear usuario nuevo</a>
+                    </div>
                 </form>
             </div>
         </div>
@@ -83,3 +92,7 @@
         </div>
     </div> *@
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,78 @@
+@model RegisterViewModel
+
+@{
+    Layout = "_AuthLayout";
+    ViewData["Title"] = "Registro de usuario";
+}
+
+<div class="auth-page auth-password-page">
+    <section class="auth-split" aria-label="Registro de usuario SOLSAP CUP">
+        <div class="auth-brand-panel">
+            <div class="auth-brand-content auth-password-brand-content">
+                <div class="auth-logo-wrapper">
+                    <img class="auth-logo" src="~/img/solsapcuplogosf.png" alt="SOLSAP CUP" asp-append-version="true" />
+                </div>
+                <p class="auth-slogan">Regístrate para participar en la SOLSAP CUP.</p>
+                <div class="auth-password-details">
+                    <span>Datos SAP</span>
+                    <strong>Crearemos tu socio de negocio con tu identificación y tus credenciales web temporales.</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="auth-login-panel">
+            <div class="login-card password-card">
+                <div class="login-header password-header">
+                    <h2>Crear usuario</h2>
+                    <p>Ingresa tus datos tal como deben quedar registrados.</p>
+                </div>
+
+                <form asp-action="Register" asp-controller="Auth" method="post" autocomplete="off">
+                    @Html.AntiForgeryToken()
+
+                    <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+                    <div class="form-group">
+                        <input asp-for="IdentificationNumber"
+                               class="form-control"
+                               placeholder="Núm. identificación" />
+                        <span asp-validation-for="IdentificationNumber" class="field-error"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <input asp-for="FirstName"
+                               class="form-control"
+                               placeholder="Primer nombre" />
+                        <span asp-validation-for="FirstName" class="field-error"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <input asp-for="FirstLastName"
+                               class="form-control"
+                               placeholder="Primer apellido" />
+                        <span asp-validation-for="FirstLastName" class="field-error"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <input asp-for="Email"
+                               class="form-control"
+                               placeholder="Correo electrónico" />
+                        <span asp-validation-for="Email" class="field-error"></span>
+                    </div>
+
+                    <button type="submit" class="btn-login">
+                        Registrarme
+                    </button>
+
+                    <div class="auth-link-row">
+                        <a asp-action="Login" asp-controller="Auth">Ya tengo usuario</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

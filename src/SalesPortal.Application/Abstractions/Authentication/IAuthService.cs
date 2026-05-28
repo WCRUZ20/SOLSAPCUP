@@ -12,6 +12,10 @@ namespace SalesPortal.Application.Abstractions.Authentication
             LoginRequest request,
             CancellationToken cancellationToken);
 
+        Task<Result<RegisterResult>> RegisterAsync(
+            RegisterRequest request,
+            CancellationToken cancellationToken);
+
         Task<Result> ChangePasswordAsync(
             ChangePasswordRequest request,
             CancellationToken cancellationToken);

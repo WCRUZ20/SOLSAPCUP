@@ -95,6 +95,48 @@ namespace SalesPortal.Web.Controllers
             return RedirectToAction("Index", "Home");
         }
 
+
+        [HttpGet]
+        public IActionResult Register()
+        {
+            if (User.Identity?.IsAuthenticated == true)
+                return RedirectToAction("Index", "Home");
+
+            return View(new RegisterViewModel());
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Register(
+            RegisterViewModel model,
+            CancellationToken cancellationToken)
+        {
+            if (!ModelState.IsValid)
+                return View(model);
+
+            var host = HttpContext.Request.Host.Value;
+
+            var result = await _authService.RegisterAsync(
+                new RegisterRequest
+                {
+                    IdentificationNumber = model.IdentificationNumber,
+                    FirstName = model.FirstName,
+                    FirstLastName = model.FirstLastName,
+                    Email = model.Email,
+                    Host = host
+                },
+                cancellationToken);
+
+            if (result.IsFailure || result.Data == null)
+            {
+                ModelState.AddModelError(string.Empty, result.Message);
+                return View(model);
+            }
+
+            TempData["Success"] = $"Registro creado correctamente. Usuario: {result.Data.UserWeb}. Contraseña temporal: {result.Data.DefaultPassword}.";
+            return RedirectToAction(nameof(Login));
+        }
+
         [HttpGet]
         public IActionResult ChangePassword()
         {

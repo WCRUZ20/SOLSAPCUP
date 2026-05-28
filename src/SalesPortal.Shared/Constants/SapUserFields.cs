@@ -6,6 +6,7 @@ namespace SalesPortal.Shared.Constants
 {
     public static class SapUserFields
     {
+        public const string Dealer = "U_Dealer";
         public const string UserWeb = "U_UserWeb";
         public const string EmailWeb = "U_EmailWeb";
         public const string PwdWeb = "U_PwdWeb";

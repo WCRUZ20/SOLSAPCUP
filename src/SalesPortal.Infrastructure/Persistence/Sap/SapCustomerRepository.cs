@@ -1,10 +1,14 @@
 ﻿using SalesPortal.Application.Abstractions.Persistence;
+using SalesPortal.Application.Auth.Dtos;
 using SalesPortal.Domain.Customers;
 using SalesPortal.Domain.Tenants;
 using SalesPortal.Shared.Constants;
 using System;
 using System.Data;
 using System.Data.Common;
+using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace SalesPortal.Infrastructure.Persistence.Sap
 {
@@ -92,6 +96,89 @@ namespace SalesPortal.Infrastructure.Persistence.Sap
             return MapCustomer(reader);
         }
 
+
+        public async Task<bool> ExistsByCardCodeOrIdentificationAsync(
+            Tenant tenant,
+            string cardCode,
+            string identificationNumber,
+            CancellationToken cancellationToken)
+        {
+            var dialect = SapSqlDialect.For(tenant);
+            var sql = $@"
+                SELECT {dialect.TopOneClause}
+                    {dialect.Identifier("CardCode")}
+                FROM {dialect.Table("OCRD")}
+                WHERE
+                    {dialect.Identifier("CardCode")} = {dialect.Parameter(0)}
+                    OR {dialect.Identifier("LicTradNum")} = {dialect.Parameter(1)}{dialect.LimitOneClause}";
+
+            await using var connection = _connectionFactory.CreateConnection(tenant);
+            await connection.OpenAsync(cancellationToken);
+
+            await using var command = CreateCommand(connection, sql);
+            AddParameter(command, dialect.Parameter(0), cardCode);
+            AddParameter(command, dialect.Parameter(1), identificationNumber);
+
+            var result = await command.ExecuteScalarAsync(cancellationToken);
+            return result != null && result != DBNull.Value;
+        }
+
+        public async Task CreatePortalCustomerAsync(
+            Tenant tenant,
+            PortalCustomerRegistration registration,
+            CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(tenant.ServiceLayer.BaseUrl))
+                throw new InvalidOperationException("El Service Layer no está configurado para crear socios de negocio.");
+
+            using var handler = new HttpClientHandler
+            {
+                CookieContainer = new CookieContainer()
+            };
+
+            if (tenant.ServiceLayer.AllowInvalidCertificate)
+                handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+
+            using var httpClient = new HttpClient(handler)
+            {
+                BaseAddress = new Uri(tenant.ServiceLayer.BaseUrl.TrimEnd('/') + "/")
+            };
+
+            var loginResponse = await httpClient.PostAsJsonAsync("Login", new
+            {
+                tenant.ServiceLayer.CompanyDB,
+                tenant.ServiceLayer.UserName,
+                tenant.ServiceLayer.Password
+            }, cancellationToken);
+
+            await EnsureSuccessAsync(loginResponse, "No se pudo iniciar sesión en SAP Service Layer.", cancellationToken);
+
+            var businessPartner = new Dictionary<string, object?>
+            {
+                ["CardCode"] = registration.CardCode,
+                ["CardName"] = registration.CardName,
+                ["CardType"] = "cCustomer",
+                ["FederalTaxID"] = registration.IdentificationNumber,
+                ["EmailAddress"] = registration.Email,
+                [SapUserFields.Dealer] = registration.Dealer,
+                [SapUserFields.UserWeb] = registration.UserWeb,
+                [SapUserFields.EmailWeb] = registration.Email,
+                [SapUserFields.PwdWeb] = registration.PasswordWeb,
+                [SapUserFields.ChangePwd] = registration.MustChangePassword,
+                [SapUserFields.Role] = registration.Role
+            };
+
+            if (tenant.ServiceLayer.DefaultSeries.HasValue)
+                businessPartner["Series"] = tenant.ServiceLayer.DefaultSeries.Value;
+
+            var createResponse = await httpClient.PostAsJsonAsync(
+                "BusinessPartners",
+                businessPartner,
+                cancellationToken);
+
+            await EnsureSuccessAsync(createResponse, "No se pudo crear el socio de negocio en SAP.", cancellationToken);
+        }
+
         public async Task UpdatePasswordAsync(
             Tenant tenant,
             string cardCode,
@@ -114,6 +201,52 @@ namespace SalesPortal.Infrastructure.Persistence.Sap
             AddParameter(command, dialect.Parameter(1), cardCode);
 
             await command.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+
+        private static async Task EnsureSuccessAsync(
+            HttpResponseMessage response,
+            string defaultMessage,
+            CancellationToken cancellationToken)
+        {
+            if (response.IsSuccessStatusCode)
+                return;
+
+            var responseText = await response.Content.ReadAsStringAsync(cancellationToken);
+            var sapMessage = ExtractSapErrorMessage(responseText);
+            var message = string.IsNullOrWhiteSpace(sapMessage)
+                ? defaultMessage
+                : $"{defaultMessage} {sapMessage}";
+
+            throw new InvalidOperationException(message);
+        }
+
+        private static string ExtractSapErrorMessage(string responseText)
+        {
+            if (string.IsNullOrWhiteSpace(responseText))
+                return string.Empty;
+
+            try
+            {
+                using var document = JsonDocument.Parse(responseText);
+
+                if (document.RootElement.TryGetProperty("error", out var error) &&
+                    error.TryGetProperty("message", out var message))
+                {
+                    if (message.ValueKind == JsonValueKind.Object &&
+                        message.TryGetProperty("value", out var value))
+                        return value.GetString() ?? string.Empty;
+
+                    if (message.ValueKind == JsonValueKind.String)
+                        return message.GetString() ?? string.Empty;
+                }
+            }
+            catch (JsonException)
+            {
+                return string.Empty;
+            }
+
+            return string.Empty;
         }
 
         private static DbCommand CreateCommand(DbConnection connection, string sql)
