@@ -20,11 +20,15 @@ namespace SalesPortal.Web.Models.Cup
         public string Observation { get; set; } = string.Empty;
     }
 
-    public sealed class AdminCupViewModel
+    public sealed class AdminCupPlayersViewModel
     {
         public IReadOnlyList<CompetitorFormViewModel> Competitors { get; set; } = Array.Empty<CompetitorFormViewModel>();
-        public IReadOnlyList<MatchFormViewModel> Matches { get; set; } = Array.Empty<MatchFormViewModel>();
         public CompetitorFormViewModel Competitor { get; set; } = new();
+    }
+
+    public sealed class AdminCupMatchesViewModel
+    {
+        public IReadOnlyList<MatchFormViewModel> Matches { get; set; } = Array.Empty<MatchFormViewModel>();
         public MatchFormViewModel Match { get; set; } = new();
     }
 

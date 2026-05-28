@@ -220,6 +220,11 @@ body {
     color: var(--black);
 }
 
+.btn-secondary {
+    background: var(--black);
+    color: var(--white);
+}
+
 .btn-dark {
     background: var(--black);
     color: var(--white);
@@ -757,6 +762,34 @@ td {
     margin-bottom: 24px;
 }
 
+.admin-module-header {
+    align-items: center;
+    display: flex;
+    gap: 18px;
+    justify-content: space-between;
+    margin-bottom: 22px;
+}
+
+.admin-module-header h2 {
+    margin: 4px 0 6px;
+}
+
+.admin-module-header p,
+.admin-module-card p {
+    color: #666;
+    font-weight: 700;
+    margin: 0;
+}
+
+.admin-module-card {
+    margin-bottom: 24px;
+}
+
+.admin-module-card .btn {
+    display: inline-block;
+    margin-top: 18px;
+}
+
 .cup-form {
     display: grid;
     gap: 12px;
@@ -783,5 +816,10 @@ td {
     .admin-cup-grid,
     .cup-form {
         grid-template-columns: 1fr;
+    }
+
+    .admin-module-header {
+        align-items: stretch;
+        flex-direction: column;
     }
 }

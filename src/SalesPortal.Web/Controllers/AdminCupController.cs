@@ -18,19 +18,29 @@ public sealed class AdminCupController : Controller
         _cupRepository = cupRepository;
     }
 
-    public async Task<IActionResult> Index(CancellationToken cancellationToken)
+    public IActionResult Index()
     {
-        return View(await BuildModelAsync(cancellationToken));
+        return RedirectToAction(nameof(Players));
+    }
+
+    public async Task<IActionResult> Players(CancellationToken cancellationToken)
+    {
+        return View(await BuildPlayersModelAsync(cancellationToken));
+    }
+
+    public async Task<IActionResult> Matches(CancellationToken cancellationToken)
+    {
+        return View(await BuildMatchesModelAsync(cancellationToken));
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> SaveCompetitor(AdminCupViewModel model, CancellationToken cancellationToken)
+    public async Task<IActionResult> SaveCompetitor(AdminCupPlayersViewModel model, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(model.Competitor.Code) || string.IsNullOrWhiteSpace(model.Competitor.Name))
         {
-            TempData["Error"] = "Ingrese código y nombre del competidor.";
-            return RedirectToAction(nameof(Index));
+            TempData["Error"] = "Ingrese código y nombre del jugador.";
+            return RedirectToAction(nameof(Players));
         }
 
         var tenant = _tenantResolver.ResolveByHost(HttpContext.Request.Host.Value);
@@ -47,18 +57,18 @@ public sealed class AdminCupController : Controller
             Status = model.Competitor.Status?.Trim() ?? string.Empty
         }, cancellationToken);
 
-        TempData["Success"] = "Competidor guardado correctamente.";
-        return RedirectToAction(nameof(Index));
+        TempData["Success"] = "Jugador guardado correctamente.";
+        return RedirectToAction(nameof(Players));
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> SaveMatch(AdminCupViewModel model, CancellationToken cancellationToken)
+    public async Task<IActionResult> SaveMatch(AdminCupMatchesViewModel model, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(model.Match.Code) || string.IsNullOrWhiteSpace(model.Match.Name))
         {
             TempData["Error"] = "Ingrese código y nombre del partido.";
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Matches));
         }
 
         var tenant = _tenantResolver.ResolveByHost(HttpContext.Request.Host.Value);
@@ -76,19 +86,50 @@ public sealed class AdminCupController : Controller
         }, cancellationToken);
 
         TempData["Success"] = "Partido guardado correctamente.";
-        return RedirectToAction(nameof(Index));
+        return RedirectToAction(nameof(Matches));
     }
 
-    private async Task<AdminCupViewModel> BuildModelAsync(CancellationToken cancellationToken)
+    private async Task<AdminCupPlayersViewModel> BuildPlayersModelAsync(CancellationToken cancellationToken)
     {
         var tenant = _tenantResolver.ResolveByHost(HttpContext.Request.Host.Value);
         var competitors = await _cupRepository.GetCompetitorsAsync(tenant, cancellationToken);
+
+        return new AdminCupPlayersViewModel
+        {
+            Competitors = competitors.Select(c => new CompetitorFormViewModel
+            {
+                Code = c.Code,
+                Name = c.Name,
+                PlayerId = c.PlayerId,
+                Team = c.Team,
+                Matches = c.Matches,
+                Points = c.Points,
+                GoalDifference = c.GoalDifference,
+                TablePosition = c.TablePosition,
+                Status = c.Status
+            }).ToList()
+        };
+    }
+
+    private async Task<AdminCupMatchesViewModel> BuildMatchesModelAsync(CancellationToken cancellationToken)
+    {
+        var tenant = _tenantResolver.ResolveByHost(HttpContext.Request.Host.Value);
         var matches = await _cupRepository.GetMatchesAsync(tenant, cancellationToken);
 
-        return new AdminCupViewModel
+        return new AdminCupMatchesViewModel
         {
-            Competitors = competitors.Select(c => new CompetitorFormViewModel { Code = c.Code, Name = c.Name, PlayerId = c.PlayerId, Team = c.Team, Matches = c.Matches, Points = c.Points, GoalDifference = c.GoalDifference, TablePosition = c.TablePosition, Status = c.Status }).ToList(),
-            Matches = matches.Select(m => new MatchFormViewModel { Code = m.Code, Name = m.Name, MatchDate = m.MatchDate, MatchTime = m.MatchTime, Player1 = m.Player1, Player2 = m.Player2, GoalsPlayer1 = m.GoalsPlayer1, GoalsPlayer2 = m.GoalsPlayer2, Observation = m.Observation }).ToList()
+            Matches = matches.Select(m => new MatchFormViewModel
+            {
+                Code = m.Code,
+                Name = m.Name,
+                MatchDate = m.MatchDate,
+                MatchTime = m.MatchTime,
+                Player1 = m.Player1,
+                Player2 = m.Player2,
+                GoalsPlayer1 = m.GoalsPlayer1,
+                GoalsPlayer2 = m.GoalsPlayer2,
+                Observation = m.Observation
+            }).ToList()
         };
     }
 }

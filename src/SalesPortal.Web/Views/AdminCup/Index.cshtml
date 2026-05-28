@@ -1,86 +1,35 @@
-@model SalesPortal.Web.Models.Cup.AdminCupViewModel
 @{
     ViewData["Title"] = "Administración Copa";
 }
 
+<div class="admin-module-header">
+    <div>
+        <span class="eyebrow">Administración</span>
+        <h2>Selecciona un submódulo</h2>
+        <p>Gestiona por separado el registro de jugadores y partidos de la copa.</p>
+    </div>
+</div>
+
 <div class="admin-cup-grid">
-    <section class="cup-card">
+    <section class="cup-card admin-module-card">
         <div class="cup-card-header">
             <div>
-                <span class="eyebrow">Competidores</span>
-                <h3>Registrar / actualizar competidor</h3>
+                <span class="eyebrow">Jugadores</span>
+                <h3>Registro de jugadores</h3>
             </div>
         </div>
-        <form asp-action="SaveCompetitor" method="post" class="cup-form">
-            @Html.AntiForgeryToken()
-            <input asp-for="Competitor.Code" class="cup-input" placeholder="Código" />
-            <input asp-for="Competitor.Name" class="cup-input" placeholder="Nombre" />
-            <input asp-for="Competitor.PlayerId" class="cup-input" placeholder="ID jugador / CardCode" />
-            <input asp-for="Competitor.Team" class="cup-input" placeholder="Equipo" />
-            <input asp-for="Competitor.Matches" class="cup-input" placeholder="Partidos" />
-            <input asp-for="Competitor.Points" class="cup-input" placeholder="Puntos" />
-            <input asp-for="Competitor.GoalDifference" class="cup-input" placeholder="Diferencia goles" />
-            <input asp-for="Competitor.TablePosition" class="cup-input" placeholder="Posición" />
-            <input asp-for="Competitor.Status" class="cup-input" placeholder="Estado" />
-            <button type="submit" class="btn btn-primary">Guardar competidor</button>
-        </form>
+        <p>Crear y actualizar jugadores, equipos, puntos y posición en tabla.</p>
+        <a class="btn btn-primary" asp-action="Players">Administrar jugadores</a>
     </section>
 
-    <section class="cup-card">
+    <section class="cup-card admin-module-card">
         <div class="cup-card-header">
             <div>
                 <span class="eyebrow">Partidos</span>
-                <h3>Registrar / actualizar partido</h3>
+                <h3>Registro de partidos</h3>
             </div>
         </div>
-        <form asp-action="SaveMatch" method="post" class="cup-form">
-            @Html.AntiForgeryToken()
-            <input asp-for="Match.Code" class="cup-input" placeholder="Código" />
-            <input asp-for="Match.Name" class="cup-input" placeholder="Nombre" />
-            <input asp-for="Match.MatchDate" type="date" class="cup-input" />
-            <input asp-for="Match.MatchTime" class="cup-input" placeholder="Hora (HHMM)" />
-            <input asp-for="Match.Player1" class="cup-input" placeholder="Jugador 1" />
-            <input asp-for="Match.Player2" class="cup-input" placeholder="Jugador 2" />
-            <input asp-for="Match.GoalsPlayer1" class="cup-input" placeholder="Goles J1" />
-            <input asp-for="Match.GoalsPlayer2" class="cup-input" placeholder="Goles J2" />
-            <textarea asp-for="Match.Observation" class="cup-input cup-comments-input" placeholder="Observación"></textarea>
-            <button type="submit" class="btn btn-primary">Guardar partido</button>
-        </form>
+        <p>Crear y actualizar programación, participantes, resultados y observaciones.</p>
+        <a class="btn btn-primary" asp-action="Matches">Administrar partidos</a>
     </section>
-</div>
-
-<div class="section-title dashboard-table-title">
-    <div>
-        <span class="eyebrow">Datos actuales</span>
-        <h2>Competidores</h2>
-    </div>
-</div>
-<div class="table-wrapper admin-table">
-    <table>
-        <thead><tr><th>Código</th><th>Nombre</th><th>ID jugador</th><th>Equipo</th><th>PJ</th><th>Pts</th><th>DG</th><th>Pos.</th><th>Estado</th></tr></thead>
-        <tbody>
-        @foreach (var competitor in Model.Competitors)
-        {
-            <tr><td class="text-strong">@competitor.Code</td><td>@competitor.Name</td><td>@competitor.PlayerId</td><td>@competitor.Team</td><td>@competitor.Matches.ToString("0")</td><td>@competitor.Points.ToString("0")</td><td>@competitor.GoalDifference.ToString("+0;-0;0")</td><td>@competitor.TablePosition.ToString("0")</td><td>@competitor.Status</td></tr>
-        }
-        </tbody>
-    </table>
-</div>
-
-<div class="section-title dashboard-table-title admin-section-spacer">
-    <div>
-        <span class="eyebrow">Datos actuales</span>
-        <h2>Partidos</h2>
-    </div>
-</div>
-<div class="table-wrapper admin-table">
-    <table>
-        <thead><tr><th>Código</th><th>Nombre</th><th>Fecha</th><th>Hora</th><th>J1</th><th>J2</th><th>Resultado</th><th>Observación</th></tr></thead>
-        <tbody>
-        @foreach (var match in Model.Matches)
-        {
-            <tr><td class="text-strong">@match.Code</td><td>@match.Name</td><td>@(match.MatchDate?.ToString("dd/MM/yyyy") ?? "--")</td><td>@(match.MatchTime?.ToString("0000") ?? "--")</td><td>@match.Player1</td><td>@match.Player2</td><td>@(match.GoalsPlayer1.HasValue || match.GoalsPlayer2.HasValue ? $"{match.GoalsPlayer1?.ToString("0") ?? "-"} - {match.GoalsPlayer2?.ToString("0") ?? "-"}" : "Pendiente")</td><td>@match.Observation</td></tr>
-        }
-        </tbody>
-    </table>
 </div>

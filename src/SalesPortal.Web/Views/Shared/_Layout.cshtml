@@ -19,6 +19,7 @@
 
             @{
                 var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+                var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
             }
 
             <nav class="menu" aria-label="Navegación principal">
@@ -26,7 +27,13 @@
                 <a class="menu-item @(currentController == "Matches" ? "active" : string.Empty)" asp-controller="Matches" asp-action="Index">Mis partidos</a>
                 @if (User.IsInRole("Admin"))
                 {
-                    <a class="menu-item @(currentController == "AdminCup" ? "active" : string.Empty)" asp-controller="AdminCup" asp-action="Index">Administración</a>
+                    <div class="menu-module">
+                        <a class="menu-item @(currentController == "AdminCup" ? "active" : string.Empty)" asp-controller="AdminCup" asp-action="Index">Administración</a>
+                        <div class="submenu" aria-label="Submódulos de administración">
+                            <a class="submenu-item @(currentController == "AdminCup" && currentAction == "Players" ? "active" : string.Empty)" asp-controller="AdminCup" asp-action="Players">Jugadores</a>
+                            <a class="submenu-item @(currentController == "AdminCup" && currentAction == "Matches" ? "active" : string.Empty)" asp-controller="AdminCup" asp-action="Matches">Partidos</a>
+                        </div>
+                    </div>
                 }
             </nav>
 

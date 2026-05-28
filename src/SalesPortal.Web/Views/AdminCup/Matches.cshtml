@@ -1,0 +1,53 @@
+@model SalesPortal.Web.Models.Cup.AdminCupMatchesViewModel
+@{
+    ViewData["Title"] = "Administración - Partidos";
+}
+
+<div class="admin-module-header">
+    <div>
+        <span class="eyebrow">Submódulo de administración</span>
+        <h2>Registro de partidos</h2>
+        <p>Administra la programación, jugadores y resultados de cada partido.</p>
+    </div>
+    <a class="btn btn-secondary" asp-action="Players">Ir a jugadores</a>
+</div>
+
+<section class="cup-card admin-module-card">
+    <div class="cup-card-header">
+        <div>
+            <span class="eyebrow">Partidos</span>
+            <h3>Registrar / actualizar partido</h3>
+        </div>
+    </div>
+    <form asp-action="SaveMatch" method="post" class="cup-form">
+        @Html.AntiForgeryToken()
+        <input asp-for="Match.Code" class="cup-input" placeholder="Código" />
+        <input asp-for="Match.Name" class="cup-input" placeholder="Nombre" />
+        <input asp-for="Match.MatchDate" type="date" class="cup-input" />
+        <input asp-for="Match.MatchTime" class="cup-input" placeholder="Hora (HHMM)" />
+        <input asp-for="Match.Player1" class="cup-input" placeholder="Jugador 1" />
+        <input asp-for="Match.Player2" class="cup-input" placeholder="Jugador 2" />
+        <input asp-for="Match.GoalsPlayer1" class="cup-input" placeholder="Goles J1" />
+        <input asp-for="Match.GoalsPlayer2" class="cup-input" placeholder="Goles J2" />
+        <textarea asp-for="Match.Observation" class="cup-input cup-comments-input" placeholder="Observación"></textarea>
+        <button type="submit" class="btn btn-primary">Guardar partido</button>
+    </form>
+</section>
+
+<div class="section-title dashboard-table-title">
+    <div>
+        <span class="eyebrow">Datos actuales</span>
+        <h2>Partidos</h2>
+    </div>
+</div>
+<div class="table-wrapper admin-table">
+    <table>
+        <thead><tr><th>Código</th><th>Nombre</th><th>Fecha</th><th>Hora</th><th>J1</th><th>J2</th><th>Resultado</th><th>Observación</th></tr></thead>
+        <tbody>
+        @foreach (var match in Model.Matches)
+        {
+            <tr><td class="text-strong">@match.Code</td><td>@match.Name</td><td>@(match.MatchDate?.ToString("dd/MM/yyyy") ?? "--")</td><td>@(match.MatchTime?.ToString("0000") ?? "--")</td><td>@match.Player1</td><td>@match.Player2</td><td>@(match.GoalsPlayer1.HasValue || match.GoalsPlayer2.HasValue ? $"{match.GoalsPlayer1?.ToString("0") ?? "-"} - {match.GoalsPlayer2?.ToString("0") ?? "-"}" : "Pendiente")</td><td>@match.Observation</td></tr>
+        }
+        </tbody>
+    </table>
+</div>
