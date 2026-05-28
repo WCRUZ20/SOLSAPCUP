@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SalesPortal.Application/SalesPortal.Application.csproj" />
+    <Project Path="src/SalesPortal.Domain/SalesPortal.Domain.csproj" />
+    <Project Path="src/SalesPortal.Infrastructure/SalesPortal.Infrastructure.csproj" />
+    <Project Path="src/SalesPortal.Shared/SalesPortal.Shared.csproj" />
+    <Project Path="src/SalesPortal.Web/SalesPortal.Web.csproj" />
+  </Folder>
+</Solution>

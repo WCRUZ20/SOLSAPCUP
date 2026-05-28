@@ -1,0 +1,388 @@
+@{
+    ViewData["Title"] = "Carga masiva pedidos";
+}
+
+<div class="section-title orders-title">
+    <div>
+        <span class="eyebrow">Pedidos</span>
+        <h2>Carga masiva pedidos</h2>
+    </div>
+    <a class="btn btn-primary" asp-controller="Orders" asp-action="DownloadBulkUploadTemplate">Descargar plantilla Excel</a>
+</div>
+
+<form id="bulkUploadForm" class="bulk-upload-panel" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    <div class="bulk-drop-zone" id="bulkDropZone">
+        <input id="bulkExcelFile" name="excelFile" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden />
+        <span class="eyebrow">Archivo Excel</span>
+        <h3>Arrastre la plantilla llena aquí</h3>
+        <p>También puede seleccionar el archivo desde su equipo. Solo se aceptan archivos <strong>.xlsx</strong>.</p>
+        <div class="bulk-upload-actions">
+            <button type="button" class="btn btn-dark" id="selectBulkFileButton">Seleccionar archivo</button>
+            <button type="submit" class="btn btn-primary" id="validateBulkFileButton">Validar y cargar grid</button>
+        </div>
+        <strong id="selectedBulkFileName">Ningún archivo seleccionado</strong>
+    </div>
+</form>
+
+<div class="bulk-toolbar" id="bulkToolbar" hidden>
+    <div>
+        <span class="eyebrow">Resultado de validación</span>
+        <strong id="bulkSummary">0 pedidos cargados</strong>
+    </div>
+    <button type="button" class="btn btn-primary" id="processBulkOrdersButton">Procesar pedidos no creados</button>
+</div>
+
+<div class="table-wrapper orders-grid bulk-orders-grid">
+    <table>
+        <thead>
+            <tr>
+                <th>#Num pedido</th>
+                <th>Fecha pedido</th>
+                <th>Valor del pedido</th>
+                <th>Comentario pedido</th>
+                <th>Dirección envío</th>
+                <th>Resultado proceso</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody id="bulkOrdersBody">
+            <tr>
+                <td colspan="7" class="empty-row">Descargue la plantilla, complete las dos pestañas y cargue el archivo para visualizar los pedidos.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="modal-backdrop" id="bulkOrderModal" hidden>
+    <div class="item-modal bulk-order-modal" role="dialog" aria-modal="true" aria-labelledby="bulkOrderModalTitle">
+        <div class="modal-header">
+            <div>
+                <span class="eyebrow">Previsualizar pedido</span>
+                <h3 id="bulkOrderModalTitle">Pedido</h3>
+            </div>
+            <button type="button" class="btn btn-outline" id="closeBulkOrderModalButton">Cerrar</button>
+        </div>
+
+        <div class="bulk-order-edit-grid">
+            <div class="filter-field">
+                <label for="modalIdOrden">IdOrden</label>
+                <input class="order-input" id="modalIdOrden" readonly />
+            </div>
+            <div class="filter-field">
+                <label for="modalAddress">Dirección</label>
+                <input class="order-input" id="modalAddress" />
+            </div>
+            <div class="filter-field bulk-order-edit-comments">
+                <label for="modalComments">Comentario</label>
+                <textarea class="order-input" id="modalComments" rows="3" maxlength="500"></textarea>
+            </div>
+        </div>
+
+        <div class="readonly-notice" id="createdOrderNotice" hidden>Este pedido ya fue creado y no se puede modificar desde la carga masiva.</div>
+
+        <div class="table-wrapper item-results-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Línea</th>
+                        <th>SKU</th>
+                        <th>Descripción</th>
+                        <th>Cantidad</th>
+                        <th>Precio</th>
+                        <th>Desc. %</th>
+                        <th>TaxCode</th>
+                        <th>Total línea</th>
+                    </tr>
+                </thead>
+                <tbody id="bulkOrderLinesBody"></tbody>
+            </table>
+        </div>
+
+        <div class="modal-actions">
+            <span class="helper-text" id="modalValidationMessages"></span>
+            <button type="button" class="btn btn-primary" id="saveBulkOrderChangesButton">Guardar cambios</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const validateUrl = '@Url.Action("ValidateBulkUpload", "Orders")';
+            const processUrl = '@Url.Action("ProcessBulkUpload", "Orders")';
+            const form = document.getElementById('bulkUploadForm');
+            const fileInput = document.getElementById('bulkExcelFile');
+            const selectButton = document.getElementById('selectBulkFileButton');
+            const fileNameLabel = document.getElementById('selectedBulkFileName');
+            const dropZone = document.getElementById('bulkDropZone');
+            const ordersBody = document.getElementById('bulkOrdersBody');
+            const toolbar = document.getElementById('bulkToolbar');
+            const summary = document.getElementById('bulkSummary');
+            const processButton = document.getElementById('processBulkOrdersButton');
+            const token = form.querySelector('input[name="__RequestVerificationToken"]').value;
+            const modal = document.getElementById('bulkOrderModal');
+            const modalTitle = document.getElementById('bulkOrderModalTitle');
+            const modalIdOrden = document.getElementById('modalIdOrden');
+            const modalAddress = document.getElementById('modalAddress');
+            const modalComments = document.getElementById('modalComments');
+            const modalLinesBody = document.getElementById('bulkOrderLinesBody');
+            const modalMessages = document.getElementById('modalValidationMessages');
+            const closeModalButton = document.getElementById('closeBulkOrderModalButton');
+            const saveModalButton = document.getElementById('saveBulkOrderChangesButton');
+            const createdNotice = document.getElementById('createdOrderNotice');
+            let orders = [];
+            let editingIndex = -1;
+
+            const currencyFormatter = new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' });
+
+            const normalizeOrder = order => ({
+                idOrden: order.idOrden ?? order.IdOrden ?? '',
+                shippingAddressName: order.shippingAddressName ?? order.ShippingAddressName ?? '',
+                comments: order.comments ?? order.Comments ?? '',
+                result: order.result ?? order.Result ?? 'No procesado',
+                resultMessage: order.resultMessage ?? order.ResultMessage ?? '',
+                docEntry: order.docEntry ?? order.DocEntry ?? null,
+                estimatedTotal: Number(order.estimatedTotal ?? order.EstimatedTotal ?? 0),
+                validationMessages: order.validationMessages ?? order.ValidationMessages ?? [],
+                lines: (order.lines ?? order.Lines ?? []).map(line => ({
+                    lineNumber: Number(line.lineNumber ?? line.LineNumber ?? 0),
+                    itemCode: line.itemCode ?? line.ItemCode ?? '',
+                    description: line.description ?? line.Description ?? '',
+                    quantity: Number(line.quantity ?? line.Quantity ?? 0),
+                    unitPrice: Number(line.unitPrice ?? line.UnitPrice ?? 0),
+                    discountPercent: Number(line.discountPercent ?? line.DiscountPercent ?? 0),
+                    taxCode: line.taxCode ?? line.TaxCode ?? '',
+                    lineTotal: Number(line.lineTotal ?? line.LineTotal ?? 0)
+                }))
+            });
+
+            const recalculateOrder = order => {
+                order.lines.forEach(line => {
+                    line.lineTotal = Number((line.quantity * line.unitPrice * (1 - (line.discountPercent / 100))).toFixed(2));
+                });
+                order.estimatedTotal = order.lines.reduce((total, line) => total + line.lineTotal, 0);
+            };
+
+            const setBusy = (element, isBusy, text) => {
+                element.disabled = isBusy;
+                if (isBusy) {
+                    element.dataset.originalText = element.textContent;
+                    element.textContent = text;
+                } else if (element.dataset.originalText) {
+                    element.textContent = element.dataset.originalText;
+                }
+            };
+
+            const renderOrders = () => {
+                if (orders.length === 0) {
+                    ordersBody.innerHTML = '<tr><td colspan="7" class="empty-row">No hay pedidos cargados.</td></tr>';
+                    toolbar.hidden = true;
+                    return;
+                }
+
+                ordersBody.innerHTML = orders.map((order, index) => {
+                    const resultClass = order.result === 'Creada' ? 'status-created' : order.result === 'Error' ? 'status-error' : 'status-pending';
+                    const message = order.resultMessage ? `<small>${escapeHtml(order.resultMessage)}</small>` : '';
+                    return `
+                        <tr>
+                            <td class="text-strong">${escapeHtml(order.idOrden)}</td>
+                            <td>Sin fecha</td>
+                            <td>${currencyFormatter.format(order.estimatedTotal)}</td>                            
+                            <td>${order.comments ? escapeHtml(order.comments) : 'Sin comentario'}</td>
+                            <td>${order.shippingAddressName ? escapeHtml(order.shippingAddressName) : 'Sin dirección'}</td>
+                            <td><span class="bulk-status ${resultClass}">${escapeHtml(order.result)}</span>${message}</td>
+                            <td>
+                                <div class="order-actions-cell">
+                                    <button type="button" class="btn btn-outline" data-preview-index="${index}">Previsualizar${order.result === 'Creada' ? '' : ' / modificar'}</button>
+                                    <button type="button" class="btn btn-red" data-delete-index="${index}" ${order.result === 'Creada' ? 'disabled' : ''}>Eliminar</button>
+                                </div>
+                            </td>
+                        </tr>`;
+                }).join('');
+
+                const created = orders.filter(order => order.result === 'Creada').length;
+                const errors = orders.filter(order => order.result === 'Error').length;
+                summary.textContent = `${orders.length} pedidos cargados · ${created} creados · ${errors} con error`;
+                toolbar.hidden = false;
+            };
+
+            const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, character => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            })[character]);
+
+            selectButton.addEventListener('click', () => fileInput.click());
+
+            fileInput.addEventListener('change', () => {
+                fileNameLabel.textContent = fileInput.files.length > 0 ? fileInput.files[0].name : 'Ningún archivo seleccionado';
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, event => {
+                    event.preventDefault();
+                    dropZone.classList.add('is-dragover');
+                });
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, event => {
+                    event.preventDefault();
+                    dropZone.classList.remove('is-dragover');
+                });
+            });
+
+            dropZone.addEventListener('drop', event => {
+                const file = event.dataTransfer.files[0];
+                if (!file) return;
+
+                if (!file.name.toLowerCase().endsWith('.xlsx')) {
+                    alert('Solo se permiten archivos Excel .xlsx.');
+                    return;
+                }
+
+                const transfer = new DataTransfer();
+                transfer.items.add(file);
+                fileInput.files = transfer.files;
+                fileNameLabel.textContent = file.name;
+            });
+
+            form.addEventListener('submit', async event => {
+                event.preventDefault();
+
+                if (fileInput.files.length === 0) {
+                    alert('Seleccione un archivo Excel antes de validar.');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('excelFile', fileInput.files[0]);
+                setBusy(document.getElementById('validateBulkFileButton'), true, 'Validando...');
+
+                try {
+                    const response = await fetch(validateUrl, {
+                        method: 'POST',
+                        headers: { 'RequestVerificationToken': token },
+                        body: formData
+                    });
+                    const payload = await response.json();
+
+                    if (!response.ok) {
+                        const errors = payload.errors ?? payload.Errors ?? ['No se pudo validar el archivo.'];
+                        alert(errors.join('\n'));
+                        return;
+                    }
+
+                    orders = (payload.orders ?? payload.Orders ?? []).map(normalizeOrder);
+                    renderOrders();
+                } catch (error) {
+                    alert('No se pudo validar el archivo Excel.');
+                } finally {
+                    setBusy(document.getElementById('validateBulkFileButton'), false);
+                }
+            });
+
+            ordersBody.addEventListener('click', event => {
+                const previewButton = event.target.closest('[data-preview-index]');
+                const deleteButton = event.target.closest('[data-delete-index]');
+
+                if (previewButton) {
+                    openModal(Number(previewButton.dataset.previewIndex));
+                }
+
+                if (deleteButton && confirm('¿Desea eliminar este registro de la carga masiva?')) {
+                    orders.splice(Number(deleteButton.dataset.deleteIndex), 1);
+                    renderOrders();
+                }
+            });
+
+            processButton.addEventListener('click', async () => {
+                if (orders.length === 0) return;
+                setBusy(processButton, true, 'Procesando...');
+
+                try {
+                    const response = await fetch(processUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': token
+                        },
+                        body: JSON.stringify({ orders })
+                    });
+
+                    if (!response.ok) {
+                        alert('No se pudo procesar la carga masiva.');
+                        return;
+                    }
+
+                    const payload = await response.json();
+                    const results = payload.results ?? payload.Results ?? [];
+
+                    results.forEach(result => {
+                        const idOrden = result.idOrden ?? result.IdOrden;
+                        const order = orders.find(candidate => candidate.idOrden.toLowerCase() === String(idOrden).toLowerCase());
+                        if (!order) return;
+
+                        order.result = result.result ?? result.Result ?? order.result;
+                        order.resultMessage = result.message ?? result.Message ?? '';
+                        order.docEntry = result.docEntry ?? result.DocEntry ?? order.docEntry;
+                    });
+
+                    renderOrders();
+                } finally {
+                    setBusy(processButton, false);
+                }
+            });
+
+            const openModal = index => {
+                editingIndex = index;
+                const order = orders[index];
+                const isCreated = order.result === 'Creada';
+                modalTitle.textContent = `Pedido ${order.idOrden}`;
+                modalIdOrden.value = order.idOrden;
+                modalAddress.value = order.shippingAddressName;
+                modalComments.value = order.comments ?? '';
+                modalAddress.readOnly = isCreated;
+                modalComments.readOnly = isCreated;
+                createdNotice.hidden = !isCreated;
+                saveModalButton.hidden = isCreated;
+                modalMessages.textContent = order.validationMessages.length > 0 ? order.validationMessages.join(' ') : (order.resultMessage ?? '');
+
+                modalLinesBody.innerHTML = order.lines.map((line, lineIndex) => `
+                    <tr>
+                        <td><input class="order-input" type="number" min="1" value="${line.lineNumber}" data-line-field="lineNumber" data-line-index="${lineIndex}" ${isCreated ? 'readonly' : ''}></td>
+                        <td><input class="order-input" value="${escapeHtml(line.itemCode)}" data-line-field="itemCode" data-line-index="${lineIndex}" ${isCreated ? 'readonly' : ''}></td>
+                        <td>${escapeHtml(line.description || 'Pendiente validación')}</td>
+                        <td><input class="order-input" type="number" min="1" step="1" value="${line.quantity}" data-line-field="quantity" data-line-index="${lineIndex}" ${isCreated ? 'readonly' : ''}></td>
+                        <td>${currencyFormatter.format(line.unitPrice)}</td>
+                        <td>${line.discountPercent.toFixed(2)}</td>
+                        <td>${escapeHtml(line.taxCode || '')}</td>
+                        <td>${currencyFormatter.format(line.lineTotal)}</td>
+                    </tr>`).join('');
+
+                modal.hidden = false;
+            };
+
+            closeModalButton.addEventListener('click', () => modal.hidden = true);
+
+            saveModalButton.addEventListener('click', () => {
+                if (editingIndex < 0) return;
+                const order = orders[editingIndex];
+                if (order.result === 'Creada') return;
+
+                order.shippingAddressName = modalAddress.value.trim();
+                order.comments = modalComments.value.trim();
+                modalLinesBody.querySelectorAll('[data-line-field]').forEach(input => {
+                    const line = order.lines[Number(input.dataset.lineIndex)];
+                    const field = input.dataset.lineField;
+                    line[field] = field === 'itemCode' ? input.value.trim() : Number(input.value);
+                });
+                order.result = 'No procesado';
+                order.resultMessage = 'Cambios pendientes de procesar. Se validarán nuevamente al crear.';
+                order.validationMessages = [];
+                recalculateOrder(order);
+                modal.hidden = true;
+                renderOrders();
+            });
+        })();
+    </script>
+}

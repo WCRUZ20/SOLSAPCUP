@@ -1,0 +1,153 @@
+@model SalesPortal.Web.Models.Home.DashboardViewModel
+
+@{
+    ViewData["Title"] = "Inicio";
+    var maxMonthlyValue = Model.MonthlySales.Count == 0 ? 0 : Model.MonthlySales.Max(month => month.Amount);
+}
+
+<div class="dashboard-hero">
+    <div>
+        <span class="eyebrow">Resumen competicion</span>
+        <h2>Hola, @User.Identity?.Name</h2>
+        @* <p>Consulta rápidamente tus pedidos recientes, el comportamiento de compra y las oportunidades para crear nuevas órdenes.</p> *@
+    </div>
+    <div class="dashboard-actions">
+        @* <a class="btn btn-light" asp-controller="Orders" asp-action="Index">Ver pedidos</a>
+        <a class="btn btn-primary" asp-controller="Orders" asp-action="Create">Nuevo pedido</a> *@
+    </div>
+</div>
+
+@* <div class="dashboard-grid dashboard-grid-four">
+    <div class="stat-card stat-card-accent">
+        <span>Pedidos últimos 30 días</span>
+        <strong>@Model.OrdersLast30Days</strong>
+        <p>@Model.TotalAmountLast30Days.ToString("C") facturados en el periodo</p>
+    </div>
+
+    <div class="stat-card">
+        <span>Promedio Pedido</span>
+        <strong>@Model.AverageTicketLast30Days.ToString("C")</strong>
+        <p>Promedio por pedido de los últimos 30 días</p>
+    </div>
+
+    <div class="stat-card">
+        <span>Productos disponibles</span>
+        <strong>@Model.AvailableProducts</strong>
+        <p>Artículos activos para crear pedidos</p>
+    </div>
+
+    <div class="stat-card">
+        <span>Último pedido</span>
+        <strong>@(Model.LastOrderDate?.ToString("dd/MM") ?? "--")</strong>
+        <p>@Model.TotalOrders pedidos consultados en 6 meses</p>
+    </div>
+</div> *@
+
+@* <div class="analytics-grid">
+    <section class="analytics-card">
+        <div class="section-title compact-title">
+            <div>
+                <span class="eyebrow">Tendencia</span>
+                <h2>Compras por mes</h2>
+            </div>
+        </div>
+
+        @if (Model.MonthlySales.Count == 0 || maxMonthlyValue == 0)
+        {
+            <div class="dashboard-empty-state">Aún no hay ventas recientes para graficar.</div>
+        }
+        else
+        {
+            <div class="bar-chart" aria-label="Compras por mes">
+                @foreach (var month in Model.MonthlySales)
+                {
+                    <div class="bar-chart-item">
+                        <div class="bar-chart-track">
+                            <span class="bar-chart-bar" style="height: @month.Percentage%"></span>
+                        </div>
+                        <strong>@month.Amount.ToString("C0")</strong>
+                        <span>@month.Label</span>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+
+    <section class="analytics-card">
+        <div class="section-title compact-title">
+            <div>
+                <span class="eyebrow">Seguimiento</span>
+                <h2>Pedidos por estado</h2>
+            </div>
+        </div>
+
+        @if (Model.OrdersByStatus.Count == 0)
+        {
+            <div class="dashboard-empty-state">No hay estados disponibles por el momento.</div>
+        }
+        else
+        {
+            <div class="status-list">
+                @foreach (var status in Model.OrdersByStatus)
+                {
+                    <div class="status-row">
+                        <div class="status-row-header">
+                            <strong>@status.Status</strong>
+                            <span>@status.Count pedido@(status.Count == 1 ? string.Empty : "s")</span>
+                        </div>
+                        <div class="progress-track" aria-hidden="true">
+                            <span style="width: @status.Percentage%"></span>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+</div>
+
+<div class="section-title dashboard-table-title">
+    <div>
+        <span class="eyebrow">Actividad</span>
+        <h2>Últimos pedidos</h2>
+    </div>
+    <a class="btn btn-outline" asp-controller="Orders" asp-action="Index">Ver listado completo</a>
+</div>
+
+<div class="table-wrapper dashboard-orders-grid">
+    <table>
+        <thead>
+            <tr>
+                <th>#Num pedido</th>
+                <th>Fecha pedido</th>
+                <th>Estado</th>
+                <th>Total</th>
+                <th>Dirección envío</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.RecentOrders.Count == 0)
+            {
+                <tr>
+                    <td colspan="6" class="empty-row">Sin pedidos recientes por el momento.</td>
+                </tr>
+            }
+            else
+            {
+                foreach (var order in Model.RecentOrders)
+                {
+                    <tr>
+                        <td class="text-strong">@order.DocNum</td>
+                        <td>@order.DocDate.ToString("dd/MM/yyyy")</td>
+                        <td>@(string.IsNullOrWhiteSpace(order.Status) ? "Sin estado" : order.Status)</td>
+                        <td>@order.DocTotal.ToString("C")</td>
+                        <td>@(string.IsNullOrWhiteSpace(order.ShippingAddress) ? "Sin dirección" : order.ShippingAddress)</td>
+                        <td>
+                            <a class="btn btn-outline" asp-controller="Orders" asp-action="Preview" asp-route-docEntry="@order.DocEntry">Ver orden</a>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div> *@

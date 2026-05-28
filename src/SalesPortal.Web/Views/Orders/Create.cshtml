@@ -1,0 +1,613 @@
+@model SalesPortal.Web.Models.Orders.OrderCreateViewModel
+@using SalesPortal.Shared.Security
+@using System.Globalization
+@using System.Security.Claims
+
+@{
+    ViewData["Title"] = "Crear pedido";
+    var draftKey = $"salesportal:last-order-draft:{User.FindFirstValue(PortalClaimTypes.CardCode) ?? "default"}";
+    var categories = Model.Items
+        .Select(item => item.CategoryName)
+        .Where(category => !string.IsNullOrWhiteSpace(category))
+        .Distinct(System.StringComparer.OrdinalIgnoreCase)
+        .OrderBy(category => category)
+        .ToList();
+}
+
+<div class="section-title orders-title">
+    @* <div>
+        <span class="eyebrow">Nuevo pedido de venta</span>
+        <h2>Selecciona artículos, cantidades y dirección de envío</h2>
+    </div> *@
+    <a class="btn btn-light" asp-controller="Orders" asp-action="Index">Volver al listado</a>
+</div>
+
+<div class="order-builder" data-draft-key="@draftKey">
+    <section class="order-card order-step is-open" data-step="items">
+        <button type="button" class="order-card-header order-step-toggle" aria-expanded="true">
+            <div>
+                <span class="eyebrow">Paso 1 · Seleccionar artículos</span>
+                @* <h3>Escoger artículos y cantidades</h3> *@
+            </div>
+            <span class="step-summary" id="itemsStepSummary">0 líneas</span>
+        </button>
+
+        <div class="order-step-body">
+            <div class="add-line-panel add-line-panel-single">
+                <div>
+                    @* <p class="helper-text">Presiona <strong>Nueva línea</strong> para buscar por SKU, descripción o categoría. La cantidad se edita directamente en cada línea seleccionada.</p> *@
+                </div>
+                <button type="button" id="openItemModalButton" class="btn btn-primary">Nueva línea</button>
+            </div>
+
+            <form asp-controller="Orders" asp-action="Confirm" method="post" id="confirmOrderForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="orderPayload" id="orderPayload" />
+                <input type="hidden" name="submissionToken" id="submissionToken" value="@Model.SubmissionToken" />
+
+                <div class="table-wrapper orders-grid order-lines-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>SKU</th>
+                                <th>Descripción</th>
+                                <th>Categoría</th>
+                                <th>Cantidad</th>
+                                <th>Precio unitario</th>
+                                <th>Descuento</th>
+                                <th>Total</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orderLinesBody">
+                            <tr id="emptyOrderRow">
+                                <td colspan="8" class="empty-row">Agregue artículos para construir el pedido.</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="6" class="order-total-label">Total del pedido</td>
+                                <td id="orderGrandTotal" class="text-strong">$0.00</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <section class="order-card order-step" data-step="address">
+        <button type="button" class="order-card-header order-step-toggle" aria-expanded="false">
+            <div>
+                <span class="eyebrow">Paso 2 · Seleccionar dirección de envío</span>
+                @* <h3>Seleccionar dirección de envío</h3> *@
+            </div>
+            <span class="step-summary" id="addressStepSummary">Sin seleccionar</span>
+        </button>
+
+        <div class="order-step-body">
+            <input asp-for="ShippingAddressName" type="hidden" id="shippingAddressSelect" />
+            <div class="address-card-list" role="radiogroup" aria-label="Direcciones de envío">
+                @foreach (var address in Model.ShippingAddresses)
+                {
+                    <button type="button"
+                            class="address-card"
+                            role="radio"
+                            aria-checked="false"
+                            data-address-name="@address.AddressName"
+                            data-address-full="@address.FullAddress">
+                        <span class="address-card-name">@address.AddressName</span>
+                        <span class="address-card-detail">@address.FullAddress</span>
+                    </button>
+                }
+            </div>
+        </div>
+    </section>
+
+    <section class="order-card order-step" data-step="comments">
+        <button type="button" class="order-card-header order-step-toggle" aria-expanded="false">
+            <div>
+                <span class="eyebrow">Paso 3 · Agregar comentarios</span>
+            </div>
+            <span class="step-summary" id="commentsStepSummary">Opcional</span>
+        </button>
+
+        <div class="order-step-body">
+            <label class="helper-text" for="orderComments">Comentarios para la orden</label>
+            <textarea asp-for="Comments"
+                      class="order-input order-comments-input"
+                      id="orderComments"
+                      rows="4"
+                      maxlength="500"
+                      placeholder="Escriba instrucciones o comentarios adicionales para este pedido."></textarea>
+            <span class="helper-text" id="commentsCharacterCount">0/500 caracteres</span>
+        </div>
+    </section>
+
+    <div class="confirm-panel">
+        <p>El borrador se guarda automáticamente en este navegador hasta que presione <strong>Confirmar pedido</strong>.</p>
+        <button type="submit" form="confirmOrderForm" class="btn btn-primary" id="confirmOrderButton" data-processing-text="Procesando pedido...">Confirmar pedido</button>
+    </div>
+
+    @* <section class="order-card order-summary-card">
+        <div class="order-card-header">
+            <div>
+                <span class="eyebrow">Detalle</span>
+                <h3>Resumen del pedido</h3>
+            </div>
+            <strong id="lineCount">0 líneas</strong>
+        </div>
+
+        <div class="confirm-panel">
+            <p>El borrador se guarda automáticamente en este navegador hasta que presione <strong>Confirmar pedido</strong>.</p>
+            <button type="submit" form="confirmOrderForm" class="btn btn-primary" id="confirmOrderButton" data-processing-text="Procesando pedido...">Confirmar pedido</button>
+        </div>
+    </section> *@
+</div>
+
+<div class="modal-backdrop" id="itemModal" hidden>
+    <div class="item-modal" role="dialog" aria-modal="true" aria-labelledby="itemModalTitle">
+        <div class="modal-header">
+            <div>
+                <span class="eyebrow">Seleccionar artículo</span>
+                @* <h3 id="itemModalTitle">Buscar nueva línea</h3> *@
+            </div>
+            <button type="button" class="btn btn-outline" id="closeItemModalButton">Cerrar</button>
+        </div>
+
+        <div class="item-modal-filters">
+            <div class="filter-field">
+                <label for="skuFilter">SKU</label>
+                <input id="skuFilter" class="order-input" type="search" placeholder="Filtrar por SKU" />
+            </div>
+            <div class="filter-field">
+                <label for="descriptionFilter">Descripción</label>
+                <input id="descriptionFilter" class="order-input" type="search" placeholder="Filtrar por descripción" />
+            </div>
+            <div class="filter-field">
+                <label for="categoryFilter">Categoría</label>
+                <select id="categoryFilter" class="order-input">
+                    <option value="">Todos las categorías</option>
+                    @foreach (var category in categories)
+                    {
+                        <option value="@category">@category</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div class="table-wrapper item-results-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>SKU</th>
+                        <th>Descripción</th>
+                        <th>Categoría</th>
+                        <th>Precio</th>
+                        <th>Seleccionar cantidad</th>
+                    </tr>
+                </thead>
+                <tbody id="itemResultsBody">
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr class="item-result-row"
+                            data-item-code="@item.ItemCode"
+                            data-description="@item.FrgnName"
+                            data-category="@item.CategoryName"
+                            data-price="@item.UnitPrice.ToString(CultureInfo.InvariantCulture)"
+                            data-discount="@item.DiscountPercent.ToString(CultureInfo.InvariantCulture)">
+                            <td class="text-strong">@item.ItemCode</td>
+                            <td>@item.FrgnName</td>
+                            <td>@(string.IsNullOrWhiteSpace(item.CategoryName) ? "Sin grupo" : item.CategoryName)</td>
+                            <td>@item.UnitPrice.ToString("C", CultureInfo.GetCultureInfo("es-DO"))</td>
+                            <td>
+                                <div class="quantity-stepper" data-quantity-stepper>
+                                    <button type="button" class="quantity-stepper-button" data-quantity-action="decrease" aria-label="Disminuir cantidad de @item.ItemCode">−</button>
+                                    <input class="order-input quantity-stepper-input modal-quantity-input" type="number" min="0" step="1" value="0" data-item-code="@item.ItemCode" aria-label="Cantidad para @item.ItemCode" />
+                                    <button type="button" class="quantity-stepper-button" data-quantity-action="increase" aria-label="Aumentar cantidad de @item.ItemCode">+</button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    <tr id="emptyItemResultsRow" hidden>
+                        <td colspan="5" class="empty-row">No se encontraron artículos con esos filtros.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="modal-actions">
+            <span class="helper-text" id="selectedItemQuantitySummary">0 artículos con cantidad</span>
+            <button type="button" class="btn btn-primary" id="confirmItemQuantitiesButton">Confirmar artículos</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const builder = document.querySelector('.order-builder');
+            const draftKey = builder.dataset.draftKey;
+            const shippingAddressSelect = document.getElementById('shippingAddressSelect');
+            const addressCards = Array.from(document.querySelectorAll('.address-card'));
+            const orderLinesBody = document.getElementById('orderLinesBody');
+            const emptyOrderRow = document.getElementById('emptyOrderRow');
+            const orderGrandTotal = document.getElementById('orderGrandTotal');
+            const lineCount = document.getElementById('lineCount');
+            const itemsStepSummary = document.getElementById('itemsStepSummary');
+            const addressStepSummary = document.getElementById('addressStepSummary');
+            const commentsStepSummary = document.getElementById('commentsStepSummary');
+            const orderComments = document.getElementById('orderComments');
+            const commentsCharacterCount = document.getElementById('commentsCharacterCount');
+            const confirmOrderForm = document.getElementById('confirmOrderForm');
+            const orderPayload = document.getElementById('orderPayload');
+            const confirmOrderButton = document.getElementById('confirmOrderButton');
+            const itemModal = document.getElementById('itemModal');
+            const openItemModalButton = document.getElementById('openItemModalButton');
+            const closeItemModalButton = document.getElementById('closeItemModalButton');
+            const confirmItemQuantitiesButton = document.getElementById('confirmItemQuantitiesButton');
+            const selectedItemQuantitySummary = document.getElementById('selectedItemQuantitySummary');
+            const skuFilter = document.getElementById('skuFilter');
+            const descriptionFilter = document.getElementById('descriptionFilter');
+            const categoryFilter = document.getElementById('categoryFilter');
+            const itemRows = Array.from(document.querySelectorAll('.item-result-row'));
+            const modalQuantityInputs = Array.from(document.querySelectorAll('.modal-quantity-input'));
+            const emptyItemResultsRow = document.getElementById('emptyItemResultsRow');
+            const currencyFormatter = new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' });
+            const escapeHtml = (value) => String(value)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
+            let lines = [];
+            let isSubmittingOrder = false;
+
+            const setOpenStep = (stepName) => {
+                document.querySelectorAll('.order-step').forEach((step) => {
+                    const isOpen = step.dataset.step === stepName;
+                    step.classList.toggle('is-open', isOpen);
+                    step.querySelector('.order-step-toggle').setAttribute('aria-expanded', String(isOpen));
+                });
+            };
+
+            const calculateLineTotal = (line) => {
+                const subtotal = line.quantity * line.unitPrice;
+                const discountAmount = subtotal * (line.discountPercent / 100);
+                return subtotal - discountAmount;
+            };
+
+            const updateAddressSelection = () => {
+                const selectedAddress = shippingAddressSelect.value;
+                addressCards.forEach((card) => {
+                    const isSelected = card.dataset.addressName === selectedAddress;
+                    card.classList.toggle('is-selected', isSelected);
+                    card.setAttribute('aria-checked', String(isSelected));
+                });
+
+                const selectedCard = addressCards.find(card => card.dataset.addressName === selectedAddress);
+                addressStepSummary.textContent = selectedCard ? selectedCard.dataset.addressName : 'Sin seleccionar';
+            };
+
+            const saveDraft = () => {
+                const draft = {
+                    shippingAddressName: shippingAddressSelect.value,
+                    comments: orderComments.value,
+                    lines: lines.map(line => ({
+                        itemCode: line.itemCode,
+                        frgnName: line.frgnName,
+                        categoryName: line.categoryName,
+                        quantity: line.quantity,
+                        unitPrice: line.unitPrice,
+                        discountPercent: line.discountPercent
+                    }))
+                };
+
+                localStorage.setItem(draftKey, JSON.stringify(draft));
+            };
+
+            const renderLines = () => {
+                orderLinesBody.innerHTML = '';
+
+                if (lines.length === 0) {
+                    orderLinesBody.appendChild(emptyOrderRow);
+                }
+
+                let grandTotal = 0;
+
+                lines.forEach((line, index) => {
+                    const total = calculateLineTotal(line);
+                    const subtotal = line.quantity * line.unitPrice;
+                    const discountAmount = subtotal * (line.discountPercent / 100);
+                    grandTotal += total;
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="text-strong">${escapeHtml(line.itemCode)}</td>
+                        <td>${escapeHtml(line.frgnName)}</td>
+                        <td>${escapeHtml(line.categoryName || 'Sin grupo')}</td>
+                        <td>
+                            <div class="quantity-stepper" data-quantity-stepper>
+                                <button type="button" class="quantity-stepper-button" data-quantity-action="decrease" data-index="${index}" aria-label="Disminuir cantidad para ${escapeHtml(line.itemCode)}">−</button>
+                                <input class="order-input quantity-stepper-input line-quantity-input" type="number" min="1" step="1" value="${line.quantity}" data-index="${index}" aria-label="Cantidad para ${escapeHtml(line.itemCode)}" />
+                                <button type="button" class="quantity-stepper-button" data-quantity-action="increase" data-index="${index}" aria-label="Aumentar cantidad para ${escapeHtml(line.itemCode)}">+</button>
+                            </div>
+                        </td>
+                        <td>${currencyFormatter.format(line.unitPrice)}</td>
+                        <td>${line.discountPercent.toFixed(2)}% (${currencyFormatter.format(discountAmount)})</td>
+                        <td class="text-strong">${currencyFormatter.format(total)}</td>
+                        <td><button type="button" class="btn btn-outline remove-line-button" data-index="${index}">Eliminar</button></td>`;
+
+                    orderLinesBody.appendChild(row);
+                });
+
+                const lineText = `${lines.length} ${lines.length === 1 ? 'línea' : 'líneas'}`;
+                if (lineCount) {
+                    lineCount.textContent = lineText;
+                }
+                itemsStepSummary.textContent = lineText;
+                orderGrandTotal.textContent = currencyFormatter.format(grandTotal);
+            };
+
+            const updateCommentsSummary = () => {
+                const trimmedComments = orderComments.value.trim();
+                commentsStepSummary.textContent = trimmedComments ? 'Con comentarios' : 'Opcional';
+                commentsCharacterCount.textContent = `${orderComments.value.length}/500 caracteres`;
+            };
+
+            const syncDraft = () => {
+                renderLines();
+                updateCommentsSummary();
+                saveDraft();
+            };
+
+            const normalizeQuantity = (value, min = 0) => {
+                const quantity = Number.parseInt(value, 10);
+                return Number.isFinite(quantity) && quantity >= min ? quantity : min;
+            };
+
+            const setQuantityInputValue = (input, value, min = 0) => {
+                input.value = String(normalizeQuantity(value, min));
+            };
+
+            const updateModalQuantitySummary = () => {
+                const selectedCount = modalQuantityInputs.filter(input => normalizeQuantity(input.value) > 0).length;
+                selectedItemQuantitySummary.textContent = `${selectedCount} ${selectedCount === 1 ? 'artículo' : 'artículos'} con cantidad`;
+            };
+
+            const resetModalQuantities = () => {
+                modalQuantityInputs.forEach(input => setQuantityInputValue(input, 0));
+                updateModalQuantitySummary();
+            };
+
+            const getItemFromRow = (row) => ({
+                itemCode: row.dataset.itemCode,
+                frgnName: row.dataset.description || '',
+                categoryName: row.dataset.category || '',
+                unitPrice: Number(row.dataset.price || 0),
+                discountPercent: Number(row.dataset.discount || 0)
+            });
+
+            const restoreDraft = () => {
+                const rawDraft = localStorage.getItem(draftKey);
+
+                if (!rawDraft) {
+                    return;
+                }
+
+                try {
+                    const draft = JSON.parse(rawDraft);
+                    shippingAddressSelect.value = draft.shippingAddressName || '';
+                    orderComments.value = draft.comments || '';
+                    lines = Array.isArray(draft.lines)
+                        ? draft.lines.filter(line => line.itemCode && Number(line.quantity) > 0).map(line => ({
+                            ...line,
+                            categoryName: line.categoryName || '',
+                            quantity: Number(line.quantity)
+                        }))
+                        : [];
+                    renderLines();
+                    updateAddressSelection();
+                    updateCommentsSummary();
+                } catch {
+                    localStorage.removeItem(draftKey);
+                }
+            };
+
+            const openItemModal = () => {
+                resetModalQuantities();
+                itemModal.hidden = false;
+                skuFilter.focus();
+                filterItems();
+            };
+
+            const closeItemModal = () => {
+                itemModal.hidden = true;
+                openItemModalButton.focus();
+            };
+
+            const filterItems = () => {
+                const sku = skuFilter.value.trim().toLowerCase();
+                const description = descriptionFilter.value.trim().toLowerCase();
+                const category = categoryFilter.value.trim().toLowerCase();
+                let visibleCount = 0;
+
+                itemRows.forEach((row) => {
+                    const matchesSku = !sku || row.dataset.itemCode.toLowerCase().includes(sku);
+                    const matchesDescription = !description || row.dataset.description.toLowerCase().includes(description);
+                    const matchesCategory = !category || row.dataset.category.toLowerCase() === category;
+                    const isVisible = matchesSku && matchesDescription && matchesCategory;
+
+                    row.hidden = !isVisible;
+
+                    if (isVisible) {
+                        visibleCount++;
+                    }
+                });
+
+                emptyItemResultsRow.hidden = visibleCount > 0;
+            };
+
+            document.querySelectorAll('.order-step-toggle').forEach((toggle) => {
+                toggle.addEventListener('click', () => {
+                    setOpenStep(toggle.closest('.order-step').dataset.step);
+                });
+            });
+
+            openItemModalButton.addEventListener('click', openItemModal);
+            closeItemModalButton.addEventListener('click', closeItemModal);
+            itemModal.addEventListener('click', (event) => {
+                if (event.target === itemModal) {
+                    closeItemModal();
+                }
+            });
+
+            [skuFilter, descriptionFilter, categoryFilter].forEach((filter) => {
+                filter.addEventListener('input', filterItems);
+                filter.addEventListener('change', filterItems);
+            });
+
+            itemModal.addEventListener('input', (event) => {
+                if (!event.target.classList.contains('modal-quantity-input')) {
+                    return;
+                }
+
+                setQuantityInputValue(event.target, event.target.value);
+                updateModalQuantitySummary();
+            });
+
+            itemModal.addEventListener('click', (event) => {
+                const quantityButton = event.target.closest('.quantity-stepper-button');
+
+                if (!quantityButton) {
+                    return;
+                }
+
+                const stepper = quantityButton.closest('[data-quantity-stepper]');
+                const input = stepper?.querySelector('.modal-quantity-input');
+
+                if (!input) {
+                    return;
+                }
+
+                const delta = quantityButton.dataset.quantityAction === 'increase' ? 1 : -1;
+                setQuantityInputValue(input, normalizeQuantity(input.value) + delta);
+                updateModalQuantitySummary();
+            });
+
+            confirmItemQuantitiesButton.addEventListener('click', () => {
+                const selectedItems = itemRows
+                    .map((row) => ({
+                        item: getItemFromRow(row),
+                        quantity: normalizeQuantity(row.querySelector('.modal-quantity-input').value)
+                    }))
+                    .filter(selection => selection.quantity > 0);
+
+                if (selectedItems.length === 0) {
+                    alert('Seleccione una cantidad mayor a cero para al menos un artículo.');
+                    return;
+                }
+
+                selectedItems.forEach(({ item, quantity }) => {
+                    const existingLine = lines.find(line => line.itemCode === item.itemCode);
+
+                    if (existingLine) {
+                        existingLine.quantity += quantity;
+                    } else {
+                        lines.push({ ...item, quantity });
+                    }
+                });
+
+                syncDraft();
+                closeItemModal();
+            });
+
+            addressCards.forEach((card) => {
+                card.addEventListener('click', () => {
+                    shippingAddressSelect.value = card.dataset.addressName;
+                    updateAddressSelection();
+                    saveDraft();
+                });
+            });
+
+            orderComments.addEventListener('input', () => {
+                updateCommentsSummary();
+                saveDraft();
+            });
+
+            orderLinesBody.addEventListener('input', (event) => {
+                if (!event.target.classList.contains('line-quantity-input')) {
+                    return;
+                }
+
+                const index = Number(event.target.dataset.index);
+                const quantity = Number(event.target.value);
+
+                if (lines[index] && quantity > 0) {
+                    lines[index].quantity = quantity;
+                    syncDraft();
+                }
+            });
+
+            orderLinesBody.addEventListener('click', (event) => {
+                const quantityButton = event.target.closest('.quantity-stepper-button');
+
+                if (quantityButton) {
+                    const index = Number(quantityButton.dataset.index);
+                    const line = lines[index];
+
+                    if (!line) {
+                        return;
+                    }
+
+                    const delta = quantityButton.dataset.quantityAction === 'increase' ? 1 : -1;
+                    line.quantity = Math.max(1, normalizeQuantity(line.quantity, 1) + delta);
+                    syncDraft();
+                    return;
+                }
+
+                if (!event.target.classList.contains('remove-line-button')) {
+                    return;
+                }
+
+                const index = Number(event.target.dataset.index);
+                lines.splice(index, 1);
+                syncDraft();
+            });
+
+            confirmOrderForm.addEventListener('submit', (event) => {
+                if (isSubmittingOrder) {
+                    event.preventDefault();
+                    return;
+                }
+
+                if (!shippingAddressSelect.value || lines.length === 0) {
+                    event.preventDefault();
+                    alert('Seleccione una dirección de envío y agregue al menos una línea.');
+                    return;
+                }
+
+                orderPayload.value = JSON.stringify({
+                    shippingAddressName: shippingAddressSelect.value,
+                    comments: orderComments.value.trim(),
+                    lines: lines.map(line => ({ itemCode: line.itemCode, quantity: line.quantity }))
+                });
+
+                isSubmittingOrder = true;
+                confirmOrderButton.disabled = true;
+                confirmOrderButton.textContent = confirmOrderButton.dataset.processingText;
+            });
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && !itemModal.hidden) {
+                    closeItemModal();
+                }
+            });
+
+            restoreDraft();
+            updateAddressSelection();
+            updateCommentsSummary();
+        })();
+    </script>
+}

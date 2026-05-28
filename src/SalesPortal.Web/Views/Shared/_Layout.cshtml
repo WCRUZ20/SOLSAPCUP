@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewData["Title"] - SOLSAP CUP</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link rel="icon" type="image/svg+xml" href="~/favicon.svg" asp-append-version="true" />
+    <link rel="shortcut icon" href="~/img/solsapcuplogosf.ico" asp-append-version="true" />
+
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <a class="brand" asp-controller="Home" asp-action="Index" aria-label="Portal Ventas - Inicio">
+                <img class="brand-logo-sb" src="~/img/solsapcuplogosf.png" alt="Portal Ventas" asp-append-version="true" />
+            </a>
+
+            @{
+                var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+                var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+                var isOrdersModuleActive = currentController == "Orders";
+            }
+
+            <nav class="menu" aria-label="Navegación principal">
+                <a class="menu-item @(currentController == "Home" ? "active" : string.Empty)" asp-controller="Home" asp-action="Index">Inicio</a>
+                @* <a class="menu-item" href="#">Productos</a> *@
+                @* <div class="menu-module @(isOrdersModuleActive ? "active" : string.Empty)">
+                    <a class="menu-item menu-parent @(isOrdersModuleActive ? "active" : string.Empty)" asp-controller="Orders" asp-action="Index" aria-expanded="@(isOrdersModuleActive ? "true" : "false")">Pedidos</a>
+
+                    @if (isOrdersModuleActive)
+                    {
+                        <div class="submenu" aria-label="Submódulos de pedidos">
+                            <a class="submenu-item @(currentAction == "Index" || currentAction == "Create" || currentAction == "Preview" ? "active" : string.Empty)" asp-controller="Orders" asp-action="Index">Listado pedidos</a>
+                            <a class="submenu-item @(currentAction == "BulkUpload" ? "active" : string.Empty)" asp-controller="Orders" asp-action="BulkUpload">Carga masiva pedidos</a>
+                        </div>
+                    }
+                </div> *@
+                @* <a class="menu-item" href="#">Estado de cuenta</a> *@
+            </nav>
+
+            <div class="sidebar-session">
+                <p>Bienvenido, @User.Identity?.Name</p>
+
+                <form asp-controller="Auth" asp-action="Logout" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-red sidebar-logout">Cerrar sesión</button>
+                </form>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <div>
+                    <h1>@ViewData["Title"]</h1>
+                </div>
+            </header>
+
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert-success">@TempData["Success"]</div>
+            }
+
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert-danger">@TempData["Error"]</div>
+            }
+
+            <section class="content-card">
+                @RenderBody()
+            </section>
+        </main>
+    </div>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
