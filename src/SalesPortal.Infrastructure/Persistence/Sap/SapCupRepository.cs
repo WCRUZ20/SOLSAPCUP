@@ -90,7 +90,7 @@ namespace SalesPortal.Infrastructure.Persistence.Sap
                     {Column(dialect, "U_COD_PAIS")},
                     {Column(dialect, "U_NOMB_PAIS")}
                 FROM {dialect.Table("@PAISES_MUNDIAL")}
-                ORDER BY {countryNameOrder}, {dialect.Identifier("Name")}";
+                ORDER BY {Column(dialect, "Code")}, {countryNameOrder}, {dialect.Identifier("Name")}";
 
             await using var connection = _connectionFactory.CreateConnection(tenant);
             await connection.OpenAsync(cancellationToken);
