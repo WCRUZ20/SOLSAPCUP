@@ -2,6 +2,29 @@
 
 @{
     ViewData["Title"] = "Inicio";
+    var assignedCountryName = TempData["AssignedCountryName"]?.ToString();
+    var assignedCountryCode = TempData["AssignedCountryCode"]?.ToString();
+    var showAssignmentPopup = !string.IsNullOrWhiteSpace(assignedCountryName) && !string.IsNullOrWhiteSpace(assignedCountryCode);
+    var assignedFlagUrl = showAssignmentPopup
+        ? Url.Content($"~/img/banderas/{System.Uri.EscapeDataString(assignedCountryCode ?? string.Empty)}.png")
+        : string.Empty;
+    var userFlagUrl = string.IsNullOrWhiteSpace(Model.CountryFlagFileName)
+        ? string.Empty
+        : Url.Content($"~/img/banderas/{System.Uri.EscapeDataString(Model.CountryCode)}.png");
+}
+
+@if (showAssignmentPopup)
+{
+    <div class="country-assignment-modal" id="countryAssignmentModal" role="dialog" aria-modal="true" aria-labelledby="countryAssignmentTitle">
+        <div class="country-assignment-dialog">
+            <button type="button" class="country-assignment-close" aria-label="Cerrar mensaje de país asignado" data-close-country-modal>×</button>
+            <span class="eyebrow">País asignado</span>
+            <img class="country-assignment-flag" src="@assignedFlagUrl" alt="Bandera de @assignedCountryName" />
+            <h2 id="countryAssignmentTitle">¡Se te ha asignado @assignedCountryName!</h2>
+            <p>Este será tu país para participar en SOLSAP CUP.</p>
+            <button type="button" class="btn btn-primary" data-close-country-modal>Entendido</button>
+        </div>
+    </div>
 }
 
 <div class="dashboard-hero cup-hero">
@@ -9,6 +32,20 @@
         <span class="eyebrow">Resumen competición</span>
         <h2>Hola, @Model.UserName</h2>
         <p>Rol: <strong>@Model.RoleName</strong> · Equipo: <strong>@Model.Team</strong></p>
+    </div>
+    <div class="user-country-card" aria-label="Información del país asignado">
+        @if (!string.IsNullOrWhiteSpace(userFlagUrl))
+        {
+            <img class="user-country-flag" src="@userFlagUrl" alt="Bandera de @Model.CountryName" />
+        }
+        else
+        {
+            <div class="user-country-flag user-country-flag-empty" aria-hidden="true">?</div>
+        }
+        <div>
+            <span>País asignado</span>
+            <strong>@(string.IsNullOrWhiteSpace(Model.CountryName) ? "Sin país" : Model.CountryName)</strong>
+        </div>
     </div>
 </div>
 
@@ -115,3 +152,27 @@
         }
     </section>
 </div>
+
+@section Scripts {
+    @if (showAssignmentPopup)
+    {
+        <script>
+            (() => {
+                const modal = document.getElementById('countryAssignmentModal');
+                if (!modal) {
+                    return;
+                }
+
+                const closeModal = () => modal.remove();
+                modal.querySelectorAll('[data-close-country-modal]').forEach(button => {
+                    button.addEventListener('click', closeModal);
+                });
+                modal.addEventListener('click', event => {
+                    if (event.target === modal) {
+                        closeModal();
+                    }
+                });
+            })();
+        </script>
+    }
+}

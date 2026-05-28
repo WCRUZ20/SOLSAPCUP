@@ -83,6 +83,12 @@ namespace SalesPortal.Web.Controllers
                     AllowRefresh = true
                 });
 
+            if (login.CountryWasAssigned)
+            {
+                TempData["AssignedCountryName"] = login.AssignedCountryName;
+                TempData["AssignedCountryCode"] = login.AssignedCountryCode;
+            }
+
             if (login.MustChangePassword)
                 return RedirectToAction(nameof(ChangePassword));
 

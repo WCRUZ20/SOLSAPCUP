@@ -6,6 +6,9 @@ namespace SalesPortal.Web.Models.Home
         public string RoleCode { get; set; } = string.Empty;
         public string RoleName => RoleCode == "A" ? "ADMIN" : "PLAYER";
         public string Team { get; set; } = string.Empty;
+        public string CountryCode { get; set; } = string.Empty;
+        public string CountryName { get; set; } = string.Empty;
+        public string CountryFlagFileName => string.IsNullOrWhiteSpace(CountryCode) ? string.Empty : $"{CountryCode}.png";
         public decimal PlayerPoints { get; set; }
         public decimal PlayerMatches { get; set; }
         public decimal PlayerGoalDifference { get; set; }

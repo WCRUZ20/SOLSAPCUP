@@ -892,3 +892,114 @@ td {
         flex-direction: column;
     }
 }
+
+.country-assignment-modal {
+    align-items: center;
+    background: rgba(17, 17, 17, 0.68);
+    display: flex;
+    inset: 0;
+    justify-content: center;
+    padding: 24px;
+    position: fixed;
+    z-index: 1000;
+}
+
+.country-assignment-dialog {
+    background: var(--white);
+    border-radius: 28px;
+    box-shadow: 0 28px 70px rgba(0, 0, 0, 0.28);
+    max-width: 440px;
+    padding: 34px;
+    position: relative;
+    text-align: center;
+    width: min(100%, 440px);
+}
+
+.country-assignment-dialog .eyebrow {
+    color: var(--orange);
+}
+
+.country-assignment-dialog h2 {
+    font-size: 30px;
+    margin: 14px 0 10px;
+}
+
+.country-assignment-dialog p {
+    color: #666;
+    margin: 0 0 22px;
+}
+
+.country-assignment-close {
+    align-items: center;
+    background: var(--gray);
+    border: none;
+    border-radius: 999px;
+    color: var(--black);
+    cursor: pointer;
+    display: flex;
+    font-size: 24px;
+    font-weight: 800;
+    height: 40px;
+    justify-content: center;
+    position: absolute;
+    right: 18px;
+    top: 18px;
+    width: 40px;
+}
+
+.country-assignment-flag {
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+    display: block;
+    height: 132px;
+    margin: 18px auto 0;
+    object-fit: cover;
+    width: 196px;
+}
+
+.user-country-card {
+    align-items: center;
+    background: rgba(255, 255, 255, 0.13);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 20px;
+    display: flex;
+    flex-shrink: 0;
+    gap: 14px;
+    min-width: 250px;
+    padding: 14px 16px;
+}
+
+.user-country-card span {
+    color: rgba(255, 255, 255, 0.78);
+    display: block;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.user-country-card strong {
+    color: var(--white);
+    display: block;
+    font-size: 20px;
+    margin-top: 4px;
+}
+
+.user-country-flag {
+    background: var(--white);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 14px;
+    height: 62px;
+    object-fit: cover;
+    width: 92px;
+}
+
+.user-country-flag-empty {
+    align-items: center;
+    color: var(--black);
+    display: flex;
+    font-size: 24px;
+    font-weight: 900;
+    justify-content: center;
+}

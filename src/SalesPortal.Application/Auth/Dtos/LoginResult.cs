@@ -13,5 +13,8 @@ namespace SalesPortal.Application.Auth.Dtos
         public string TenantCode { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
         public bool MustChangePassword { get; set; }
+        public bool CountryWasAssigned { get; set; }
+        public string AssignedCountryCode { get; set; } = string.Empty;
+        public string AssignedCountryName { get; set; } = string.Empty;
     }
 }

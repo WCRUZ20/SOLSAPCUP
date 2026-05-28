@@ -60,6 +60,7 @@ namespace SalesPortal.Application.Auth.Services
             if (!passwordIsValid)
                 return Result<LoginResult>.Failure("Usuario o contraseña incorrectos.");
 
+            CountryAssignmentInfo? countryAssignment = null;
             if (IsPlayer(customer.Role))
             {
                 var assignmentResult = await EnsurePlayerCountryAssignmentAsync(
@@ -70,6 +71,8 @@ namespace SalesPortal.Application.Auth.Services
 
                 if (assignmentResult.IsFailure)
                     return Result<LoginResult>.Failure(assignmentResult.Message);
+
+                countryAssignment = assignmentResult.Data;
             }
 
             var result = new LoginResult
@@ -80,13 +83,16 @@ namespace SalesPortal.Application.Auth.Services
                 EmailWeb = customer.EmailWeb,
                 TenantCode = tenant.Code,
                 MustChangePassword = customer.MustChangePassword,
-                Role = customer.Role
+                Role = customer.Role,
+                CountryWasAssigned = countryAssignment?.WasAssigned ?? false,
+                AssignedCountryCode = countryAssignment?.CountryCode ?? string.Empty,
+                AssignedCountryName = countryAssignment?.CountryName ?? string.Empty
             };
 
             return Result<LoginResult>.Success(result);
         }
 
-        private async Task<Result> EnsurePlayerCountryAssignmentAsync(
+        private async Task<Result<CountryAssignmentInfo>> EnsurePlayerCountryAssignmentAsync(
             Tenant tenant,
             string playerId,
             string playerName,
@@ -98,11 +104,11 @@ namespace SalesPortal.Application.Auth.Services
                 cancellationToken);
 
             if (!string.IsNullOrWhiteSpace(currentCompetitor?.Team))
-                return Result.Success();
+                return Result<CountryAssignmentInfo>.Success(new CountryAssignmentInfo());
 
             var countries = await _cupRepository.GetWorldCupCountriesAsync(tenant, cancellationToken);
             if (countries.Count == 0)
-                return Result.Failure("No hay países disponibles para asignar al jugador.");
+                return Result<CountryAssignmentInfo>.Failure("No hay países disponibles para asignar al jugador.");
 
             var competitors = await _cupRepository.GetCompetitorsAsync(tenant, cancellationToken);
             var assignedTeams = competitors
@@ -118,7 +124,7 @@ namespace SalesPortal.Application.Auth.Services
                 .ToList();
 
             if (availableCountries.Count == 0)
-                return Result.Failure("No hay países disponibles sin asignar para este jugador.");
+                return Result<CountryAssignmentInfo>.Failure("No hay países disponibles sin asignar para este jugador.");
 
             var selectedCountry = availableCountries[Random.Shared.Next(availableCountries.Count)];
             var selectedTeam = GetCountryTeamName(selectedCountry);
@@ -136,7 +142,12 @@ namespace SalesPortal.Application.Auth.Services
                 Status = currentCompetitor?.Status ?? string.Empty
             }, cancellationToken);
 
-            return Result.Success();
+            return Result<CountryAssignmentInfo>.Success(new CountryAssignmentInfo
+            {
+                WasAssigned = true,
+                CountryCode = selectedCountry.CountryCode.Trim(),
+                CountryName = selectedTeam
+            });
         }
 
         private static bool IsPlayer(string role)
@@ -164,6 +175,13 @@ namespace SalesPortal.Application.Auth.Services
         private static string GetCountryTeamName(WorldCupCountry country)
         {
             return GetCountryAssignmentKeys(country).First();
+        }
+
+        private sealed class CountryAssignmentInfo
+        {
+            public bool WasAssigned { get; set; }
+            public string CountryCode { get; set; } = string.Empty;
+            public string CountryName { get; set; } = string.Empty;
         }
 
         public async Task<Result> ChangePasswordAsync(
