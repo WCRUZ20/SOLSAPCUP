@@ -1038,3 +1038,236 @@ td {
 .cup-form .admin-input-locked {
     border-style: dashed;
 }
+
+.admin-hero {
+    background: linear-gradient(135deg, var(--orange-light), var(--white) 66%);
+    border: 1px solid rgba(229, 95, 0, 0.18);
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    padding: 22px;
+}
+
+.admin-module-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.admin-editor-shell {
+    align-items: start;
+    display: grid;
+    gap: 18px;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 0.35fr);
+    margin-bottom: 24px;
+}
+
+.admin-editor-card {
+    margin-bottom: 0;
+}
+
+.admin-card-header {
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+}
+
+.admin-status-pill,
+.admin-record-count,
+.admin-table-chip {
+    align-items: center;
+    background: #f1f1f1;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: #555;
+    display: inline-flex;
+    font-size: 13px;
+    font-weight: 900;
+    line-height: 1;
+    padding: 8px 12px;
+    white-space: nowrap;
+}
+
+.admin-status-pill.is-ready {
+    background: var(--orange-light);
+    border-color: rgba(229, 95, 0, 0.34);
+    color: var(--orange);
+}
+
+.admin-selected-summary {
+    background: var(--gray-soft);
+    border: 1px dashed var(--border);
+    border-radius: 16px;
+    display: grid;
+    gap: 4px;
+    margin-bottom: 16px;
+    padding: 14px 16px;
+}
+
+.admin-selected-summary span,
+.admin-selected-summary small,
+.form-field small {
+    color: #666;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.admin-selected-summary strong {
+    color: var(--black);
+    font-size: 18px;
+}
+
+.admin-friendly-form {
+    gap: 16px;
+}
+
+.form-field {
+    display: grid;
+    gap: 7px;
+}
+
+.form-field label,
+.admin-search-field span {
+    color: var(--gray-dark);
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.form-field-wide,
+.admin-form-actions {
+    grid-column: 1 / -1;
+}
+
+.admin-form-actions {
+    align-items: center;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 2px;
+    padding-top: 16px;
+}
+
+.admin-form-actions .btn {
+    margin-top: 0;
+}
+
+.score-field input {
+    font-size: 22px;
+    font-weight: 900;
+    text-align: center;
+}
+
+.admin-guidance-card {
+    background: linear-gradient(180deg, var(--white), var(--gray-soft));
+    position: sticky;
+    top: 0;
+}
+
+.admin-guidance-card h3 {
+    margin: 4px 0 12px;
+}
+
+.admin-guidance-list {
+    display: grid;
+    gap: 12px;
+    margin: 0;
+    padding-left: 18px;
+}
+
+.admin-guidance-list li {
+    color: #555;
+    font-weight: 700;
+    line-height: 1.45;
+}
+
+.admin-guidance-list strong {
+    color: var(--black);
+}
+
+.admin-data-title {
+    align-items: end;
+}
+
+.admin-table-toolbar {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.04);
+    margin-bottom: 12px;
+    padding: 14px;
+}
+
+.admin-search-field {
+    display: grid;
+    gap: 8px;
+}
+
+.admin-search-field input {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    font: inherit;
+    min-height: 46px;
+    padding: 10px 14px;
+    width: 100%;
+}
+
+.admin-search-field input:focus {
+    border-color: var(--orange);
+    box-shadow: 0 0 0 3px rgba(229, 95, 0, 0.16);
+    outline: none;
+}
+
+.admin-table table {
+    background: var(--white);
+}
+
+.admin-table tbody tr:nth-child(even) {
+    background: #fcfcfc;
+}
+
+.admin-table tbody tr[hidden] {
+    display: none;
+}
+
+.admin-table-chip {
+    background: var(--orange-light);
+    border-color: rgba(229, 95, 0, 0.2);
+    color: var(--black);
+    padding: 7px 10px;
+}
+
+.btn:disabled,
+.btn[disabled] {
+    cursor: not-allowed;
+    opacity: 0.58;
+}
+
+.cup-form input:read-only.admin-input-locked,
+.cup-form textarea:read-only.admin-input-locked {
+    cursor: default;
+}
+
+@media (max-width: 1100px) {
+    .admin-editor-shell {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-guidance-card {
+        position: static;
+    }
+}
+
+@media (max-width: 640px) {
+    .admin-module-actions,
+    .admin-form-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .admin-module-actions .btn,
+    .admin-form-actions .btn {
+        text-align: center;
+        width: 100%;
+    }
+}

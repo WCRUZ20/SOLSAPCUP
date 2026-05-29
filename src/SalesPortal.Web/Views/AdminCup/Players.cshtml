@@ -3,44 +3,105 @@
     ViewData["Title"] = "Administración - Jugadores";
 }
 
-<div class="admin-module-header">
+<div class="admin-module-header admin-hero">
     <div>
         <span class="eyebrow">Submódulo de administración</span>
         <h2>Registro de jugadores</h2>
-        <p>Selecciona un jugador del grid para cargar sus datos y actualizar únicamente los campos editables.</p>
+        <p>Busca, selecciona y actualiza jugadores con campos guiados y referencias claras para evitar errores de captura.</p>
     </div>
-    <a class="btn btn-secondary" asp-action="Matches">Ir a partidos</a>
-    <a class="btn btn-secondary" asp-action="Countries">Ir a países</a>
+    <div class="admin-module-actions">
+        <a class="btn btn-secondary" asp-action="Matches">Ir a partidos</a>
+        <a class="btn btn-secondary" asp-action="Countries">Ir a países</a>
+    </div>
 </div>
 
-<section class="cup-card admin-module-card">
-    <div class="cup-card-header">
-        <div>
-            <span class="eyebrow">Jugadores</span>
-            <h3>Actualizar jugador seleccionado</h3>
-            <p class="admin-selection-help" data-admin-editor-help>Selecciona una fila del grid para habilitar la edición.</p>
+<section class="admin-editor-shell" aria-labelledby="player-editor-title">
+    <div class="cup-card admin-module-card admin-editor-card">
+        <div class="cup-card-header admin-card-header">
+            <div>
+                <span class="eyebrow">Paso 2 · Editar</span>
+                <h3 id="player-editor-title">Actualizar jugador seleccionado</h3>
+                <p class="admin-selection-help" data-admin-editor-help>Primero selecciona una fila de la tabla para habilitar la edición.</p>
+            </div>
+            <span class="admin-status-pill" data-admin-editor-status>Sin selección</span>
         </div>
+        <div class="admin-selected-summary" data-admin-selected-summary aria-live="polite">
+            <span>Jugador</span>
+            <strong>Ningún registro seleccionado</strong>
+        </div>
+        <form asp-action="SaveCompetitor" method="post" class="cup-form admin-friendly-form" data-admin-editor-form>
+            @Html.AntiForgeryToken()
+            <div class="form-field is-readonly">
+                <label asp-for="Competitor.Code">Código</label>
+                <input asp-for="Competitor.Code" class="cup-input" placeholder="Ej. J001" disabled data-admin-field="code" data-locked="true" />
+                <small>Identificador de referencia; no se modifica aquí.</small>
+            </div>
+            <div class="form-field is-readonly">
+                <label asp-for="Competitor.Name">Nombre</label>
+                <input asp-for="Competitor.Name" class="cup-input" placeholder="Nombre del jugador" disabled data-admin-field="name" data-locked="true" />
+                <small>Se carga automáticamente desde la selección.</small>
+            </div>
+            <div class="form-field is-readonly">
+                <label asp-for="Competitor.PlayerId">ID jugador / CardCode</label>
+                <input asp-for="Competitor.PlayerId" class="cup-input" placeholder="CardCode" disabled data-admin-field="playerId" data-locked="true" />
+                <small>Referencia del cliente en SAP.</small>
+            </div>
+            <div class="form-field is-readonly">
+                <label asp-for="Competitor.Team">Equipo</label>
+                <input asp-for="Competitor.Team" class="cup-input" placeholder="Equipo asignado" disabled data-admin-field="team" data-locked="true" />
+                <small>Dato informativo del jugador.</small>
+            </div>
+            <div class="form-field">
+                <label asp-for="Competitor.Matches">Partidos jugados</label>
+                <input asp-for="Competitor.Matches" class="cup-input" type="number" step="1" min="0" placeholder="0" disabled data-admin-field="matches" />
+            </div>
+            <div class="form-field">
+                <label asp-for="Competitor.Points">Puntos</label>
+                <input asp-for="Competitor.Points" class="cup-input" type="number" step="1" min="0" placeholder="0" disabled data-admin-field="points" />
+            </div>
+            <div class="form-field">
+                <label asp-for="Competitor.GoalDifference">Diferencia de goles</label>
+                <input asp-for="Competitor.GoalDifference" class="cup-input" type="number" step="1" placeholder="Ej. 3" disabled data-admin-field="goalDifference" />
+            </div>
+            <div class="form-field">
+                <label asp-for="Competitor.TablePosition">Posición en tabla</label>
+                <input asp-for="Competitor.TablePosition" class="cup-input" type="number" step="1" min="0" placeholder="Ej. 1" disabled data-admin-field="tablePosition" />
+            </div>
+            <div class="form-field form-field-wide">
+                <label asp-for="Competitor.Status">Estado</label>
+                <input asp-for="Competitor.Status" class="cup-input" placeholder="Activo, clasificado, eliminado..." disabled data-admin-field="status" />
+                <small>Usa un estado corto y consistente para facilitar el seguimiento.</small>
+            </div>
+            <div class="admin-form-actions">
+                <button type="button" class="btn btn-light" data-admin-editor-clear disabled>Limpiar selección</button>
+                <button type="submit" class="btn btn-primary" disabled data-admin-editor-submit>Guardar jugador</button>
+            </div>
+        </form>
     </div>
-    <form asp-action="SaveCompetitor" method="post" class="cup-form" data-admin-editor-form>
-        @Html.AntiForgeryToken()
-        <input asp-for="Competitor.Code" class="cup-input" placeholder="Código" disabled data-admin-field="code" data-locked="true" />
-        <input asp-for="Competitor.Name" class="cup-input" placeholder="Nombre" disabled data-admin-field="name" data-locked="true" />
-        <input asp-for="Competitor.PlayerId" class="cup-input" placeholder="ID jugador / CardCode" disabled data-admin-field="playerId" data-locked="true" />
-        <input asp-for="Competitor.Team" class="cup-input" placeholder="Equipo" disabled data-admin-field="team" data-locked="true" />
-        <input asp-for="Competitor.Matches" class="cup-input" placeholder="Partidos" disabled data-admin-field="matches" />
-        <input asp-for="Competitor.Points" class="cup-input" placeholder="Puntos" disabled data-admin-field="points" />
-        <input asp-for="Competitor.GoalDifference" class="cup-input" placeholder="Diferencia goles" disabled data-admin-field="goalDifference" />
-        <input asp-for="Competitor.TablePosition" class="cup-input" placeholder="Posición" disabled data-admin-field="tablePosition" />
-        <input asp-for="Competitor.Status" class="cup-input" placeholder="Estado" disabled data-admin-field="status" />
-        <button type="submit" class="btn btn-primary" disabled data-admin-editor-submit>Guardar jugador</button>
-    </form>
+
+    <aside class="cup-card admin-guidance-card" aria-label="Consejos de captura para jugadores">
+        <span class="eyebrow">Paso 1 · Seleccionar</span>
+        <h3>Consejos UX</h3>
+        <ul class="admin-guidance-list">
+            <li><strong>Busca primero</strong> por código, nombre o equipo para reducir filas visibles.</li>
+            <li><strong>Valida métricas</strong> antes de guardar: PJ, puntos, diferencia y posición.</li>
+            <li><strong>Campos grises</strong> son de referencia y quedan protegidos contra cambios accidentales.</li>
+        </ul>
+    </aside>
 </section>
 
-<div class="section-title dashboard-table-title">
+<div class="section-title dashboard-table-title admin-data-title">
     <div>
         <span class="eyebrow">Datos actuales</span>
         <h2>Jugadores</h2>
     </div>
+    <span class="admin-record-count" data-admin-grid-count>@Model.Competitors.Count registros</span>
+</div>
+<div class="admin-table-toolbar">
+    <label class="admin-search-field">
+        <span>Buscar jugador</span>
+        <input type="search" placeholder="Filtra por código, nombre, ID, equipo o estado" data-admin-grid-search />
+    </label>
 </div>
 <div class="table-wrapper admin-table" data-admin-editor-grid>
     <table>
@@ -48,7 +109,7 @@
         <tbody>
         @foreach (var competitor in Model.Competitors)
         {
-            <tr class="admin-selectable-row" tabindex="0" data-field-code="@competitor.Code" data-field-name="@competitor.Name" data-field-player-id="@competitor.PlayerId" data-field-team="@competitor.Team" data-field-matches="@competitor.Matches.ToString("0")" data-field-points="@competitor.Points.ToString("0")" data-field-goal-difference="@competitor.GoalDifference.ToString("0")" data-field-table-position="@competitor.TablePosition.ToString("0")" data-field-status="@competitor.Status"><td class="text-strong">@competitor.Code</td><td>@competitor.Name</td><td>@competitor.PlayerId</td><td>@competitor.Team</td><td>@competitor.Matches.ToString("0")</td><td>@competitor.Points.ToString("0")</td><td>@competitor.GoalDifference.ToString("+0;-0;0")</td><td>@competitor.TablePosition.ToString("0")</td><td>@competitor.Status</td></tr>
+            <tr class="admin-selectable-row" tabindex="0" data-summary-title="@competitor.Name" data-summary-detail="@competitor.Code · @competitor.Team" data-field-code="@competitor.Code" data-field-name="@competitor.Name" data-field-player-id="@competitor.PlayerId" data-field-team="@competitor.Team" data-field-matches="@competitor.Matches.ToString("0")" data-field-points="@competitor.Points.ToString("0")" data-field-goal-difference="@competitor.GoalDifference.ToString("0")" data-field-table-position="@competitor.TablePosition.ToString("0")" data-field-status="@competitor.Status"><td class="text-strong">@competitor.Code</td><td>@competitor.Name</td><td>@competitor.PlayerId</td><td>@competitor.Team</td><td>@competitor.Matches.ToString("0")</td><td>@competitor.Points.ToString("0")</td><td>@competitor.GoalDifference.ToString("+0;-0;0")</td><td>@competitor.TablePosition.ToString("0")</td><td><span class="admin-table-chip">@competitor.Status</span></td></tr>
         }
         </tbody>
     </table>
