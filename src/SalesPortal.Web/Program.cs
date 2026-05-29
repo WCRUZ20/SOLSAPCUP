@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using SalesPortal.Infrastructure;
 using SalesPortal.Web.Filters;
+using SalesPortal.Web.Options;
+using SalesPortal.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +11,8 @@ builder.Services.AddControllersWithViews(options =>
     options.Filters.Add<RequirePasswordChangeFilter>();
 });
 
+builder.Services.Configure<SmtpOptions>(builder.Configuration.GetSection("Smtp"));
+builder.Services.AddTransient<IRegistrationEmailSender, SmtpRegistrationEmailSender>();
 builder.Services.AddInfrastructure();
 builder.Services.AddMemoryCache();
 builder.Services
