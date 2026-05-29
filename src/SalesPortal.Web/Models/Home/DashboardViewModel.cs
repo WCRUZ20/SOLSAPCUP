@@ -24,6 +24,9 @@ namespace SalesPortal.Web.Models.Home
         public string Name { get; set; } = string.Empty;
         public string PlayerId { get; set; } = string.Empty;
         public string Team { get; set; } = string.Empty;
+        public string CountryCode { get; set; } = string.Empty;
+        public string CountryName { get; set; } = string.Empty;
+        public string CountryFlagFileName => string.IsNullOrWhiteSpace(CountryCode) ? string.Empty : $"{CountryCode}.png";
         public decimal Matches { get; set; }
         public decimal Points { get; set; }
         public decimal GoalDifference { get; set; }

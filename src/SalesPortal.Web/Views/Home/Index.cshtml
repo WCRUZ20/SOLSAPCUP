@@ -86,6 +86,7 @@
                     <tr>
                         <th>Pos.</th>
                         <th>Jugador</th>
+                        <th>País</th>
                         <th>Equipo</th>
                         <th>PJ</th>
                         <th>GF</th>
@@ -98,15 +99,34 @@
                 <tbody>
                     @if (Model.Standings.Count == 0)
                     {
-                        <tr><td colspan="9" class="empty-row">Aún no hay competidores registrados.</td></tr>
+                        <tr><td colspan="10" class="empty-row">Aún no hay competidores registrados.</td></tr>
                     }
                     else
                     {
                         foreach (var row in Model.Standings)
                         {
+                            @{
+                                var rowFlagUrl = string.IsNullOrWhiteSpace(row.CountryFlagFileName)
+                                    ? string.Empty
+                                    : Url.Content($"~/img/banderas/{System.Uri.EscapeDataString(row.CountryCode)}.png");
+                                var rowCountryLabel = string.IsNullOrWhiteSpace(row.CountryName) ? row.Team : row.CountryName;
+                            }
                             <tr class="@(row.IsCurrentUser ? "current-player-row" : string.Empty)">
                                 <td class="text-strong">@(row.Position == 0 ? "--" : row.Position.ToString("0"))</td>
                                 <td>@row.Name</td>
+                                <td>
+                                    <span class="table-country-flag-cell table-country-flag-cell-with-name">
+                                        @if (!string.IsNullOrWhiteSpace(rowFlagUrl))
+                                        {
+                                            <img class="table-country-flag" src="@rowFlagUrl" alt="Bandera de @rowCountryLabel" />
+                                        }
+                                        else
+                                        {
+                                            <span class="table-country-flag-placeholder" aria-hidden="true">--</span>
+                                        }
+                                        <span>@rowCountryLabel</span>
+                                    </span>
+                                </td>
                                 <td>@row.Team</td>
                                 <td>@row.Matches.ToString("0")</td>
                                 <td>@row.GoalsFor.ToString("0")</td>

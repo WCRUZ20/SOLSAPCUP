@@ -1212,6 +1212,41 @@ td {
     width: 100%;
 }
 
+.table-country-flag-cell {
+    align-items: center;
+    display: inline-flex;
+    gap: 8px;
+    min-width: 54px;
+}
+
+.table-country-flag-cell-with-name {
+    min-width: 150px;
+}
+
+.table-country-flag {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    height: 28px;
+    object-fit: cover;
+    width: 42px;
+}
+
+.table-country-flag-placeholder {
+    align-items: center;
+    background: #f3f3f3;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    color: #777;
+    display: inline-flex;
+    font-size: 12px;
+    font-weight: 900;
+    height: 28px;
+    justify-content: center;
+    width: 42px;
+}
+
 .admin-search-field input:focus {
     border-color: var(--orange);
     box-shadow: 0 0 0 3px rgba(229, 95, 0, 0.16);

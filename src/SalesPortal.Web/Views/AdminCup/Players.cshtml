@@ -27,16 +27,44 @@
         <div class="admin-table-toolbar admin-table-toolbar-compact">
             <label class="admin-search-field">
                 <span>Buscar jugador</span>
-                <input type="search" placeholder="Código, nombre, ID, equipo o estado" data-admin-grid-search />
+                <input type="search" placeholder="Código, ID, país, equipo o estado" data-admin-grid-search />
             </label>
         </div>
         <div class="table-wrapper admin-table admin-table-compact" data-admin-editor-grid>
             <table>
-                <thead><tr><th>Código</th><th>Nombre</th><th>ID jugador</th><th>Equipo</th><th>PJ</th><th>Pts</th><th>DG</th><th>Pos.</th><th>Estado</th></tr></thead>
+                <thead><tr><th>Código</th><th>País</th><th>ID jugador</th><th>Equipo</th><th>PJ</th><th>Pts</th><th>DG</th><th>Pos.</th><th>Estado</th></tr></thead>
                 <tbody>
                 @foreach (var competitor in Model.Competitors)
                 {
-                    <tr class="admin-selectable-row" tabindex="0" data-summary-title="@competitor.Name" data-summary-detail="@competitor.Code · @competitor.Team" data-field-code="@competitor.Code" data-field-name="@competitor.Name" data-field-player-id="@competitor.PlayerId" data-field-team="@competitor.Team" data-field-matches="@competitor.Matches.ToString("0")" data-field-points="@competitor.Points.ToString("0")" data-field-goal-difference="@competitor.GoalDifference.ToString("0")" data-field-table-position="@competitor.TablePosition.ToString("0")" data-field-status="@competitor.Status"><td class="text-strong">@competitor.Code</td><td>@competitor.Name</td><td>@competitor.PlayerId</td><td>@competitor.Team</td><td>@competitor.Matches.ToString("0")</td><td>@competitor.Points.ToString("0")</td><td>@competitor.GoalDifference.ToString("+0;-0;0")</td><td>@competitor.TablePosition.ToString("0")</td><td><span class="admin-table-chip">@competitor.Status</span></td></tr>
+                    @{
+                        var competitorFlagUrl = string.IsNullOrWhiteSpace(competitor.CountryFlagFileName)
+                            ? string.Empty
+                            : Url.Content($"~/img/banderas/{System.Uri.EscapeDataString(competitor.CountryCode)}.png");
+                        var competitorCountryLabel = string.IsNullOrWhiteSpace(competitor.CountryName) ? competitor.Team : competitor.CountryName;
+                    }
+                    <tr class="admin-selectable-row" tabindex="0" data-summary-title="@competitor.Name" data-summary-detail="@competitor.Code · @competitor.Team" data-field-code="@competitor.Code" data-field-name="@competitor.Name" data-field-player-id="@competitor.PlayerId" data-field-team="@competitor.Team" data-field-matches="@competitor.Matches.ToString("0")" data-field-points="@competitor.Points.ToString("0")" data-field-goal-difference="@competitor.GoalDifference.ToString("0")" data-field-table-position="@competitor.TablePosition.ToString("0")" data-field-status="@competitor.Status">
+                        <td class="text-strong">@competitor.Code</td>
+                        <td>
+                            <span class="table-country-flag-cell">
+                                @if (!string.IsNullOrWhiteSpace(competitorFlagUrl))
+                                {
+                                    <img class="table-country-flag" src="@competitorFlagUrl" alt="Bandera de @competitorCountryLabel" title="@competitorCountryLabel" />
+                                }
+                                else
+                                {
+                                    <span class="table-country-flag-placeholder" title="Sin bandera">--</span>
+                                }
+                                <span class="visually-hidden">@competitorCountryLabel</span>
+                            </span>
+                        </td>
+                        <td>@competitor.PlayerId</td>
+                        <td>@competitor.Team</td>
+                        <td>@competitor.Matches.ToString("0")</td>
+                        <td>@competitor.Points.ToString("0")</td>
+                        <td>@competitor.GoalDifference.ToString("+0;-0;0")</td>
+                        <td>@competitor.TablePosition.ToString("0")</td>
+                        <td><span class="admin-table-chip">@competitor.Status</span></td>
+                    </tr>
                 }
                 </tbody>
             </table>

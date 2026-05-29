@@ -35,12 +35,15 @@ public sealed class HomeController : Controller
             .Select(competitor =>
             {
                 var goals = CalculateGoals(competitor, matches);
+                var country = FindCountryForTeam(countries, competitor.Team);
                 return new StandingRowViewModel
                 {
                     Code = competitor.Code,
                     Name = competitor.Name,
                     PlayerId = competitor.PlayerId,
                     Team = competitor.Team,
+                    CountryCode = country?.CountryCode.Trim() ?? string.Empty,
+                    CountryName = country == null ? competitor.Team : GetCountryDisplayName(country),
                     Matches = competitor.Matches,
                     Points = competitor.Points,
                     GoalDifference = competitor.GoalDifference,

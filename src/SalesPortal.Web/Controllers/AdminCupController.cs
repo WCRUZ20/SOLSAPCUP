@@ -174,22 +174,55 @@ public sealed class AdminCupController : Controller
     {
         var tenant = _tenantResolver.ResolveByHost(HttpContext.Request.Host.Value);
         var competitors = await _cupRepository.GetCompetitorsAsync(tenant, cancellationToken);
+        var countries = await _cupRepository.GetWorldCupCountriesAsync(tenant, cancellationToken);
 
         return new AdminCupPlayersViewModel
         {
-            Competitors = competitors.Select(c => new CompetitorFormViewModel
+            Competitors = competitors.Select(c =>
             {
-                Code = c.Code,
-                Name = c.Name,
-                PlayerId = c.PlayerId,
-                Team = c.Team,
-                Matches = c.Matches,
-                Points = c.Points,
-                GoalDifference = c.GoalDifference,
-                TablePosition = c.TablePosition,
-                Status = c.Status
+                var country = FindCountryForTeam(countries, c.Team);
+                return new CompetitorFormViewModel
+                {
+                    Code = c.Code,
+                    Name = c.Name,
+                    PlayerId = c.PlayerId,
+                    Team = c.Team,
+                    CountryCode = country?.CountryCode.Trim() ?? string.Empty,
+                    CountryName = country == null ? c.Team : GetCountryDisplayName(country),
+                    Matches = c.Matches,
+                    Points = c.Points,
+                    GoalDifference = c.GoalDifference,
+                    TablePosition = c.TablePosition,
+                    Status = c.Status
+                };
             }).ToList()
         };
+    }
+
+    private static WorldCupCountry? FindCountryForTeam(IReadOnlyList<WorldCupCountry> countries, string team)
+    {
+        if (string.IsNullOrWhiteSpace(team))
+            return null;
+
+        return countries.FirstOrDefault(country => GetCountryAssignmentKeys(country)
+            .Any(key => string.Equals(key, team.Trim(), StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private static IEnumerable<string> GetCountryAssignmentKeys(WorldCupCountry country)
+    {
+        if (!string.IsNullOrWhiteSpace(country.CountryName))
+            yield return country.CountryName.Trim();
+
+        if (!string.IsNullOrWhiteSpace(country.CountryCode))
+            yield return country.CountryCode.Trim();
+
+        if (!string.IsNullOrWhiteSpace(country.Name))
+            yield return country.Name.Trim();
+    }
+
+    private static string GetCountryDisplayName(WorldCupCountry country)
+    {
+        return GetCountryAssignmentKeys(country).FirstOrDefault() ?? string.Empty;
     }
 
     private async Task<AdminCupMatchesViewModel> BuildMatchesModelAsync(CancellationToken cancellationToken)
