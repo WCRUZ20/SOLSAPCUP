@@ -1003,3 +1003,38 @@ td {
     font-weight: 900;
     justify-content: center;
 }
+
+.admin-selection-help {
+    color: #666;
+    font-weight: 700;
+    margin-top: 8px;
+}
+
+.admin-selectable-row {
+    cursor: pointer;
+    transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.admin-selectable-row:hover,
+.admin-selectable-row:focus-visible {
+    background: var(--orange-light);
+    outline: none;
+}
+
+.admin-selectable-row.is-selected {
+    background: var(--orange-light);
+    box-shadow: inset 4px 0 0 var(--orange);
+}
+
+.cup-form input:disabled,
+.cup-form textarea:disabled,
+.cup-form select:disabled,
+.cup-form .admin-input-locked {
+    background: #f3f3f3;
+    color: #666;
+    cursor: not-allowed;
+}
+
+.cup-form .admin-input-locked {
+    border-style: dashed;
+}
