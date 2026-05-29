@@ -67,6 +67,7 @@ namespace SalesPortal.Application.Auth.Services
                     tenant,
                     customer.CardCode,
                     customer.CardName,
+                    customer.UserWeb,
                     cancellationToken);
 
                 if (assignmentResult.IsFailure)
@@ -180,6 +181,7 @@ namespace SalesPortal.Application.Auth.Services
             Tenant tenant,
             string playerId,
             string playerName,
+            string playerCode,
             CancellationToken cancellationToken)
         {
             var currentCompetitor = await _cupRepository.GetCompetitorByPlayerIdAsync(
@@ -215,7 +217,7 @@ namespace SalesPortal.Application.Auth.Services
 
             await _cupRepository.SaveCompetitorAsync(tenant, new Competitor
             {
-                Code = string.IsNullOrWhiteSpace(currentCompetitor?.Code) ? playerId : currentCompetitor.Code.Trim(),
+                Code = string.IsNullOrWhiteSpace(playerCode) ? playerId : playerCode.Trim(),
                 Name = string.IsNullOrWhiteSpace(currentCompetitor?.Name) ? playerName : currentCompetitor.Name.Trim(),
                 PlayerId = playerId,
                 Team = selectedTeam,
