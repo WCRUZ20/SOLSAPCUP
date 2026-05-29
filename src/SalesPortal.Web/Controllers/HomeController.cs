@@ -31,35 +31,34 @@ public sealed class HomeController : Controller
         var countries = await _cupRepository.GetWorldCupCountriesAsync(tenant, cancellationToken);
         var currentCompetitor = competitors.FirstOrDefault(c => string.Equals(c.PlayerId, playerId, StringComparison.OrdinalIgnoreCase));
         var currentCountry = currentCompetitor == null ? null : FindCountryForTeam(countries, currentCompetitor.Team);
-        var standingRows = competitors
-            .Select(competitor =>
+        var statistics = CalculateStandings(competitors, matches);
+        var standingRows = statistics
+            .Select(row =>
             {
-                var goals = CalculateGoals(competitor, matches);
-                var country = FindCountryForTeam(countries, competitor.Team);
+                var country = FindCountryForTeam(countries, row.Competitor.Team);
                 return new StandingRowViewModel
                 {
-                    Code = competitor.Code,
-                    Name = competitor.Name,
-                    PlayerId = competitor.PlayerId,
-                    Team = competitor.Team,
+                    Code = row.Competitor.Code,
+                    Name = row.Competitor.Name,
+                    PlayerId = row.Competitor.PlayerId,
+                    Team = row.Competitor.Team,
                     CountryCode = country?.CountryCode.Trim() ?? string.Empty,
-                    CountryName = country == null ? competitor.Team : GetCountryDisplayName(country),
-                    Matches = competitor.Matches,
-                    Points = competitor.Points,
-                    GoalDifference = competitor.GoalDifference,
-                    Position = competitor.TablePosition,
-                    Status = competitor.Status,
-                    GoalsFor = goals.For,
-                    GoalsAgainst = goals.Against,
-                    IsCurrentUser = string.Equals(competitor.PlayerId, playerId, StringComparison.OrdinalIgnoreCase)
+                    CountryName = country == null ? row.Competitor.Team : GetCountryDisplayName(country),
+                    Matches = row.Matches,
+                    Points = row.Points,
+                    GoalDifference = row.GoalDifference,
+                    Position = row.Position,
+                    Status = row.Competitor.Status,
+                    GoalsFor = row.GoalsFor,
+                    GoalsAgainst = row.GoalsAgainst,
+                    IsCurrentUser = string.Equals(row.Competitor.PlayerId, playerId, StringComparison.OrdinalIgnoreCase)
                 };
             })
-            .OrderBy(row => row.Position == 0 ? decimal.MaxValue : row.Position)
-            .ThenByDescending(row => row.Points)
-            .ThenByDescending(row => row.GoalDifference)
             .ToList();
 
-        var currentGoals = currentCompetitor == null ? (For: 0m, Against: 0m) : CalculateGoals(currentCompetitor, matches);
+        var currentStatistics = currentCompetitor == null
+            ? null
+            : statistics.FirstOrDefault(row => string.Equals(row.Competitor.Code, currentCompetitor.Code, StringComparison.OrdinalIgnoreCase));
         var maxGoals = standingRows.Count == 0 ? 0 : standingRows.Max(row => row.GoalsFor);
 
         var model = new DashboardViewModel
@@ -69,11 +68,11 @@ public sealed class HomeController : Controller
             Team = currentCompetitor?.Team ?? "Sin equipo asignado",
             CountryCode = currentCountry?.CountryCode.Trim() ?? string.Empty,
             CountryName = currentCountry == null ? (currentCompetitor?.Team ?? string.Empty) : GetCountryDisplayName(currentCountry),
-            PlayerPoints = currentCompetitor?.Points ?? 0,
-            PlayerMatches = currentCompetitor?.Matches ?? 0,
-            PlayerGoalDifference = currentCompetitor?.GoalDifference ?? 0,
-            GoalsFor = currentGoals.For,
-            GoalsAgainst = currentGoals.Against,
+            PlayerPoints = currentStatistics?.Points ?? 0,
+            PlayerMatches = currentStatistics?.Matches ?? 0,
+            PlayerGoalDifference = currentStatistics?.GoalDifference ?? 0,
+            GoalsFor = currentStatistics?.GoalsFor ?? 0,
+            GoalsAgainst = currentStatistics?.GoalsAgainst ?? 0,
             Standings = standingRows,
             GoalChart = standingRows.Take(8).Select(row => new GoalChartRowViewModel
             {
@@ -112,37 +111,95 @@ public sealed class HomeController : Controller
         return GetCountryAssignmentKeys(country).FirstOrDefault() ?? string.Empty;
     }
 
-    private static (decimal For, decimal Against) CalculateGoals(SalesPortal.Domain.Cup.Competitor competitor, IReadOnlyList<SalesPortal.Domain.Cup.CupMatch> matches)
+    private static IReadOnlyList<StandingStatistics> CalculateStandings(
+        IReadOnlyList<Competitor> competitors,
+        IReadOnlyList<CupMatch> matches)
     {
-        var goalsFor = 0m;
-        var goalsAgainst = 0m;
-        foreach (var match in matches)
+        var today = DateTime.Today;
+        var statistics = competitors
+            .Select(competitor => new StandingStatistics(competitor))
+            .ToList();
+
+        foreach (var match in matches.Where(match => IsPlayedMatch(match, today)))
         {
-            var isPlayer1 = IsSamePlayer(match.Player1, competitor);
-            var isPlayer2 = IsSamePlayer(match.Player2, competitor);
-            if (!isPlayer1 && !isPlayer2)
+            var player1 = FindStatisticsForPlayer(match.Player1, statistics);
+            var player2 = FindStatisticsForPlayer(match.Player2, statistics);
+
+            if (player1 == null || player2 == null || ReferenceEquals(player1, player2))
                 continue;
 
-            if (isPlayer1)
-            {
-                goalsFor += match.GoalsPlayer1 ?? 0;
-                goalsAgainst += match.GoalsPlayer2 ?? 0;
-            }
-            else if (isPlayer2)
-            {
-                goalsFor += match.GoalsPlayer2 ?? 0;
-                goalsAgainst += match.GoalsPlayer1 ?? 0;
-            }
+            var goalsPlayer1 = match.GoalsPlayer1.GetValueOrDefault();
+            var goalsPlayer2 = match.GoalsPlayer2.GetValueOrDefault();
+
+            player1.ApplyMatch(goalsPlayer1, goalsPlayer2);
+            player2.ApplyMatch(goalsPlayer2, goalsPlayer1);
         }
 
-        return (goalsFor, goalsAgainst);
+        var position = 1;
+        foreach (var row in statistics
+            .OrderByDescending(row => row.Points)
+            .ThenByDescending(row => row.GoalDifference)
+            .ThenBy(row => row.Competitor.Name, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(row => row.Competitor.Code, StringComparer.OrdinalIgnoreCase))
+        {
+            row.Position = position++;
+        }
+
+        return statistics
+            .OrderBy(row => row.Position)
+            .ToList();
     }
 
-    private static bool IsSamePlayer(string matchPlayer, SalesPortal.Domain.Cup.Competitor competitor)
+    private static bool IsPlayedMatch(CupMatch match, DateTime today)
+    {
+        return match.MatchDate.HasValue
+            && match.MatchDate.Value.Date <= today
+            && match.GoalsPlayer1.HasValue
+            && match.GoalsPlayer2.HasValue;
+    }
+
+    private static StandingStatistics? FindStatisticsForPlayer(string matchPlayer, IEnumerable<StandingStatistics> statistics)
+    {
+        if (string.IsNullOrWhiteSpace(matchPlayer))
+            return null;
+
+        return statistics.FirstOrDefault(row => IsSamePlayer(matchPlayer, row.Competitor));
+    }
+
+    private static bool IsSamePlayer(string matchPlayer, Competitor competitor)
     {
         return string.Equals(matchPlayer, competitor.PlayerId, StringComparison.OrdinalIgnoreCase)
             || string.Equals(matchPlayer, competitor.Code, StringComparison.OrdinalIgnoreCase)
             || string.Equals(matchPlayer, competitor.Name, StringComparison.OrdinalIgnoreCase)
             || string.Equals(matchPlayer, competitor.Team, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private sealed class StandingStatistics
+    {
+        public StandingStatistics(Competitor competitor)
+        {
+            Competitor = competitor;
+        }
+
+        public Competitor Competitor { get; }
+        public decimal Matches { get; private set; }
+        public decimal Points { get; private set; }
+        public decimal GoalDifference { get; private set; }
+        public decimal GoalsFor { get; private set; }
+        public decimal GoalsAgainst { get; private set; }
+        public decimal Position { get; set; }
+
+        public void ApplyMatch(decimal goalsFor, decimal goalsAgainst)
+        {
+            Matches++;
+            GoalsFor += goalsFor;
+            GoalsAgainst += goalsAgainst;
+            GoalDifference += goalsFor - goalsAgainst;
+
+            if (goalsFor > goalsAgainst)
+                Points += 3;
+            else if (goalsFor == goalsAgainst)
+                Points += 1;
+        }
     }
 }

@@ -113,8 +113,9 @@ public sealed class AdminCupController : Controller
             GoalsPlayer2 = model.Match.GoalsPlayer2,
             Observation = model.Match.Observation?.Trim() ?? string.Empty
         }, cancellationToken);
+        await RefreshStandingsAsync(tenant, cancellationToken);
 
-        TempData["Success"] = "Partido guardado correctamente.";
+        TempData["Success"] = "Partido guardado correctamente. Tabla de posiciones actualizada.";
         return RedirectToAction(nameof(Matches));
     }
 
@@ -148,8 +149,9 @@ public sealed class AdminCupController : Controller
 
         var tenant = _tenantResolver.ResolveByHost(HttpContext.Request.Host.Value);
         await _cupRepository.DeleteMatchAsync(tenant, code.Trim(), cancellationToken);
+        await RefreshStandingsAsync(tenant, cancellationToken);
 
-        TempData["Success"] = "Partido eliminado correctamente.";
+        TempData["Success"] = "Partido eliminado correctamente. Tabla de posiciones actualizada.";
         return RedirectToAction(nameof(Matches));
     }
 
@@ -168,6 +170,94 @@ public sealed class AdminCupController : Controller
 
         TempData["Success"] = "País eliminado correctamente.";
         return RedirectToAction(nameof(Countries));
+    }
+
+    private async Task RefreshStandingsAsync(SalesPortal.Domain.Tenants.Tenant tenant, CancellationToken cancellationToken)
+    {
+        var competitors = await _cupRepository.GetCompetitorsAsync(tenant, cancellationToken);
+        var matches = await _cupRepository.GetMatchesAsync(tenant, cancellationToken);
+        var today = DateTime.Today;
+        var statistics = competitors
+            .Select(competitor => new CompetitorStatistics(competitor))
+            .ToList();
+
+        foreach (var match in matches.Where(match => IsPlayedMatch(match, today)))
+        {
+            var player1 = FindStatisticsForPlayer(match.Player1, statistics);
+            var player2 = FindStatisticsForPlayer(match.Player2, statistics);
+
+            if (player1 == null || player2 == null || ReferenceEquals(player1, player2))
+                continue;
+
+            var goalsPlayer1 = match.GoalsPlayer1.GetValueOrDefault();
+            var goalsPlayer2 = match.GoalsPlayer2.GetValueOrDefault();
+
+            player1.ApplyMatch(goalsPlayer1, goalsPlayer2);
+            player2.ApplyMatch(goalsPlayer2, goalsPlayer1);
+        }
+
+        var position = 1;
+        foreach (var row in statistics
+            .OrderByDescending(row => row.Points)
+            .ThenByDescending(row => row.GoalDifference)
+            .ThenBy(row => row.Competitor.Name, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(row => row.Competitor.Code, StringComparer.OrdinalIgnoreCase))
+        {
+            row.Competitor.Matches = row.Matches;
+            row.Competitor.Points = row.Points;
+            row.Competitor.GoalDifference = row.GoalDifference;
+            row.Competitor.TablePosition = position++;
+
+            await _cupRepository.SaveCompetitorAsync(tenant, row.Competitor, cancellationToken);
+        }
+    }
+
+    private static bool IsPlayedMatch(CupMatch match, DateTime today)
+    {
+        return match.MatchDate.HasValue
+            && match.MatchDate.Value.Date <= today
+            && match.GoalsPlayer1.HasValue
+            && match.GoalsPlayer2.HasValue;
+    }
+
+    private static CompetitorStatistics? FindStatisticsForPlayer(string matchPlayer, IEnumerable<CompetitorStatistics> statistics)
+    {
+        if (string.IsNullOrWhiteSpace(matchPlayer))
+            return null;
+
+        return statistics.FirstOrDefault(row => IsSamePlayer(matchPlayer, row.Competitor));
+    }
+
+    private static bool IsSamePlayer(string matchPlayer, Competitor competitor)
+    {
+        return string.Equals(matchPlayer, competitor.PlayerId, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(matchPlayer, competitor.Code, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(matchPlayer, competitor.Name, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(matchPlayer, competitor.Team, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private sealed class CompetitorStatistics
+    {
+        public CompetitorStatistics(Competitor competitor)
+        {
+            Competitor = competitor;
+        }
+
+        public Competitor Competitor { get; }
+        public decimal Matches { get; private set; }
+        public decimal Points { get; private set; }
+        public decimal GoalDifference { get; private set; }
+
+        public void ApplyMatch(decimal goalsFor, decimal goalsAgainst)
+        {
+            Matches++;
+            GoalDifference += goalsFor - goalsAgainst;
+
+            if (goalsFor > goalsAgainst)
+                Points += 3;
+            else if (goalsFor == goalsAgainst)
+                Points += 1;
+        }
     }
 
     private async Task<AdminCupPlayersViewModel> BuildPlayersModelAsync(CancellationToken cancellationToken)
