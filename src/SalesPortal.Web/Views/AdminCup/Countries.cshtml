@@ -7,7 +7,7 @@
     <div>
         <span class="eyebrow">Submódulo de administración</span>
         <h2>Registro de países del mundial</h2>
-        <p>Administra los códigos y nombres de los países participantes.</p>
+        <p>Selecciona un país del grid para cargar sus datos y actualizar únicamente los campos editables.</p>
     </div>
     <a class="btn btn-secondary" asp-action="Players">Ir a jugadores</a>
     <a class="btn btn-secondary" asp-action="Matches">Ir a partidos</a>
@@ -17,16 +17,17 @@
     <div class="cup-card-header">
         <div>
             <span class="eyebrow">Países</span>
-            <h3>Registrar / actualizar país</h3>
+            <h3>Actualizar país seleccionado</h3>
+            <p class="admin-selection-help" data-admin-editor-help>Selecciona una fila del grid para habilitar la edición.</p>
         </div>
     </div>
-    <form asp-action="SaveCountry" method="post" class="cup-form">
+    <form asp-action="SaveCountry" method="post" class="cup-form" data-admin-editor-form>
         @Html.AntiForgeryToken()
-        <input asp-for="Country.Code" class="cup-input" placeholder="ID interno (solo para actualizar)" />
-        <input asp-for="Country.CountryCode" class="cup-input" placeholder="Código país" />
-        <input asp-for="Country.CountryName" class="cup-input" placeholder="Nombre país" />
-        <input asp-for="Country.Name" class="cup-input" placeholder="Nombre SAP (opcional)" />
-        <button type="submit" class="btn btn-primary">Guardar país</button>
+        <input asp-for="Country.Code" class="cup-input" placeholder="ID interno" disabled data-admin-field="code" data-locked="true" />
+        <input asp-for="Country.CountryCode" class="cup-input" placeholder="Código país" disabled data-admin-field="countryCode" />
+        <input asp-for="Country.CountryName" class="cup-input" placeholder="Nombre país" disabled data-admin-field="countryName" />
+        <input asp-for="Country.Name" class="cup-input" placeholder="Nombre SAP (opcional)" disabled data-admin-field="name" />
+        <button type="submit" class="btn btn-primary" disabled data-admin-editor-submit>Guardar país</button>
     </form>
 </section>
 
@@ -36,13 +37,13 @@
         <h2>Países del mundial</h2>
     </div>
 </div>
-<div class="table-wrapper admin-table">
+<div class="table-wrapper admin-table" data-admin-editor-grid>
     <table>
         <thead><tr><th>ID</th><th>Código país</th><th>Nombre país</th><th>Nombre SAP</th></tr></thead>
         <tbody>
         @foreach (var country in Model.Countries)
         {
-            <tr><td class="text-strong">@country.Code</td><td>@country.CountryCode</td><td>@country.CountryName</td><td>@country.Name</td></tr>
+            <tr class="admin-selectable-row" tabindex="0" data-field-code="@country.Code" data-field-country-code="@country.CountryCode" data-field-country-name="@country.CountryName" data-field-name="@country.Name"><td class="text-strong">@country.Code</td><td>@country.CountryCode</td><td>@country.CountryName</td><td>@country.Name</td></tr>
         }
         </tbody>
     </table>
