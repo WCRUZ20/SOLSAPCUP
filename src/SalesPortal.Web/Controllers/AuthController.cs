@@ -5,6 +5,7 @@ using SalesPortal.Application.Abstractions.Authentication;
 using SalesPortal.Application.Auth.Dtos;
 using SalesPortal.Shared.Security;
 using SalesPortal.Web.Models.Auth;
+using SalesPortal.Web.Services;
 using System.Security.Claims;
 
 namespace SalesPortal.Web.Controllers
@@ -12,10 +13,17 @@ namespace SalesPortal.Web.Controllers
     public sealed class AuthController : Controller
     {
         private readonly IAuthService _authService;
+        private readonly IRegistrationEmailSender _registrationEmailSender;
+        private readonly ILogger<AuthController> _logger;
 
-        public AuthController(IAuthService authService)
+        public AuthController(
+            IAuthService authService,
+            IRegistrationEmailSender registrationEmailSender,
+            ILogger<AuthController> logger)
         {
             _authService = authService;
+            _registrationEmailSender = registrationEmailSender;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -133,7 +141,27 @@ namespace SalesPortal.Web.Controllers
                 return View(model);
             }
 
-            TempData["Success"] = $"Registro creado correctamente. Usuario: {result.Data.UserWeb}. Contraseña temporal: {result.Data.DefaultPassword}.";
+            var registeredUser = result.Data;
+            var fullName = $"{model.FirstName.Trim()} {model.FirstLastName.Trim()}";
+
+            try
+            {
+                await _registrationEmailSender.SendCredentialsAsync(
+                    fullName,
+                    model.Email,
+                    registeredUser.UserWeb,
+                    registeredUser.DefaultPassword,
+                    cancellationToken);
+
+                TempData["Success"] = "Registro creado correctamente. Las credenciales de acceso fueron enviadas al correo electrónico registrado.";
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogError(ex, "No se pudo enviar el correo de credenciales para el usuario {UserWeb}.", registeredUser.UserWeb);
+                TempData["Success"] = $"Registro creado correctamente. Usuario: {registeredUser.UserWeb}. Contraseña temporal: {registeredUser.DefaultPassword}.";
+                TempData["Warning"] = "No se pudo enviar el correo con las credenciales. Verifique la configuración SMTP.";
+            }
+
             return RedirectToAction(nameof(Login));
         }
 

@@ -190,7 +190,8 @@ body {
     }
 
 .validation-summary,
-.success-summary {
+.success-summary,
+.warning-summary {
     margin-bottom: 16px;
     font-weight: 700;
     text-align: center;
@@ -202,6 +203,10 @@ body {
 
 .success-summary {
     color: var(--success);
+}
+
+.warning-summary {
+    color: #a15c00;
 }
 
 .auth-link-row {
