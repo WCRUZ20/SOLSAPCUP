@@ -7,6 +7,7 @@ using System;
 using System.Data;
 using System.Data.Common;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 
@@ -124,11 +125,13 @@ namespace SalesPortal.Infrastructure.Persistence.Sap
         }
 
         public async Task CreatePortalCustomerAsync(
-            Tenant tenant,
-            PortalCustomerRegistration registration,
-            CancellationToken cancellationToken)
+    Tenant tenant,
+    PortalCustomerRegistration registration,
+    CancellationToken cancellationToken)
         {
-            if (string.IsNullOrWhiteSpace(tenant.ServiceLayer.BaseUrl))
+            var serviceLayer = tenant.ServiceLayer;
+
+            if (serviceLayer == null || string.IsNullOrWhiteSpace(serviceLayer.BaseUrl))
                 throw new InvalidOperationException("El Service Layer no está configurado para crear socios de negocio.");
 
             using var handler = new HttpClientHandler
@@ -136,47 +139,168 @@ namespace SalesPortal.Infrastructure.Persistence.Sap
                 CookieContainer = new CookieContainer()
             };
 
-            if (tenant.ServiceLayer.AllowInvalidCertificate)
-                handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+            if (serviceLayer.AllowInvalidCertificate)
+                handler.ServerCertificateCustomValidationCallback =
+                    HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
 
             using var httpClient = new HttpClient(handler)
             {
-                BaseAddress = new Uri(tenant.ServiceLayer.BaseUrl.TrimEnd('/') + "/")
+                Timeout = TimeSpan.FromSeconds(60)
             };
 
-            var loginResponse = await httpClient.PostAsJsonAsync("Login", new
-            {
-                tenant.ServiceLayer.CompanyDB,
-                tenant.ServiceLayer.UserName,
-                tenant.ServiceLayer.Password
-            }, cancellationToken);
+            string? sessionCookie = null;
 
-            await EnsureSuccessAsync(loginResponse, "No se pudo iniciar sesión en SAP Service Layer.", cancellationToken);
-
-            var businessPartner = new Dictionary<string, object?>
+            try
             {
-                ["CardCode"] = registration.CardCode,
-                ["CardName"] = registration.CardName,
-                ["CardType"] = "cCustomer",
-                ["FederalTaxID"] = registration.IdentificationNumber,
-                ["EmailAddress"] = registration.Email,
-                [SapUserFields.Dealer] = registration.Dealer,
-                [SapUserFields.UserWeb] = registration.UserWeb,
-                [SapUserFields.EmailWeb] = registration.Email,
-                [SapUserFields.PwdWeb] = registration.PasswordWeb,
-                [SapUserFields.ChangePwd] = registration.MustChangePassword,
-                [SapUserFields.Role] = registration.Role
+                // 1. Login al Service Layer.
+                // Si falla, aquí se detiene el flujo y no intenta crear el SN.
+                sessionCookie = await LoginAsync(
+                    httpClient,
+                    tenant,
+                    serviceLayer,
+                    cancellationToken);
+
+                // 2. Construcción del payload para SAP Business One.
+                var businessPartner = new Dictionary<string, object?>
+                {
+                    ["CardCode"] = registration.CardCode,
+                    ["CardName"] = registration.CardName,
+                    ["CardType"] = "cCustomer",
+                    ["FederalTaxID"] = registration.IdentificationNumber,
+                    ["EmailAddress"] = registration.Email,
+
+                    // Campos de usuario SAP.
+                    [SapUserFields.UserWeb] = registration.UserWeb,
+                    [SapUserFields.EmailWeb] = registration.Email,
+                    [SapUserFields.PwdWeb] = registration.PasswordWeb,
+                    [SapUserFields.ChangePwd] = "Y",
+                    [SapUserFields.Role] = "P"
+                };
+
+                if (!string.IsNullOrWhiteSpace(registration.Dealer))
+                    businessPartner[SapUserFields.Dealer] = registration.Dealer;
+
+                //if (serviceLayer.DefaultSeries.HasValue)
+                //    businessPartner["Series"] = serviceLayer.DefaultSeries.Value;
+
+                // 3. Crear Socio de Negocio usando la cookie obtenida del Login.
+                using var request = new HttpRequestMessage(
+                    HttpMethod.Post,
+                    BuildEndpoint(serviceLayer, "BusinessPartners"));
+
+                request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                request.Headers.Add("Cookie", sessionCookie);
+                request.Content = CreateJsonContent(businessPartner);
+
+                using var createResponse = await httpClient.SendAsync(request, cancellationToken);
+
+                await EnsureSuccessAsync(
+                    createResponse,
+                    "No se pudo crear el socio de negocio en SAP.",
+                    cancellationToken);
+            }
+            finally
+            {
+                // 4. Cerrar sesión si se logró iniciar sesión.
+                if (!string.IsNullOrWhiteSpace(sessionCookie))
+                {
+                    await LogoutAsync(httpClient, serviceLayer, sessionCookie, cancellationToken);
+                }
+            }
+        }
+
+        private async Task<string> LoginAsync(
+    HttpClient httpClient,
+    Tenant tenant,
+    TenantServiceLayerSettings serviceLayer,
+    CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(serviceLayer.UserName))
+                throw new InvalidOperationException("El usuario del Service Layer no está configurado.");
+
+            if (string.IsNullOrWhiteSpace(serviceLayer.Password))
+                throw new InvalidOperationException("La contraseña del Service Layer no está configurada.");
+
+            var payload = new
+            {
+                CompanyDB = string.IsNullOrWhiteSpace(serviceLayer.CompanyDB)
+                    ? tenant.Database
+                    : serviceLayer.CompanyDB,
+                UserName = serviceLayer.UserName,
+                Password = serviceLayer.Password
             };
 
-            if (tenant.ServiceLayer.DefaultSeries.HasValue)
-                businessPartner["Series"] = tenant.ServiceLayer.DefaultSeries.Value;
+            using var request = new HttpRequestMessage(
+                HttpMethod.Post,
+                BuildEndpoint(serviceLayer, "Login"));
 
-            var createResponse = await httpClient.PostAsJsonAsync(
-                "BusinessPartners",
-                businessPartner,
-                cancellationToken);
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            request.Content = CreateJsonContent(payload);
 
-            await EnsureSuccessAsync(createResponse, "No se pudo crear el socio de negocio en SAP.", cancellationToken);
+            using var response = await httpClient.SendAsync(request, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+                var sapMessage = ExtractSapErrorMessage(responseBody);
+
+                var message = string.IsNullOrWhiteSpace(sapMessage)
+                    ? "No se pudo iniciar sesión en SAP Service Layer."
+                    : $"No se pudo iniciar sesión en SAP Service Layer. {sapMessage}";
+
+                throw new InvalidOperationException(message);
+            }
+
+            if (!response.Headers.TryGetValues("Set-Cookie", out var setCookieHeaders))
+                throw new InvalidOperationException("SAP Service Layer no devolvió cookies de sesión.");
+
+            var sessionCookie = string.Join("; ",
+                setCookieHeaders
+                    .Select(header => header.Split(';')[0])
+                    .Where(cookie => !string.IsNullOrWhiteSpace(cookie)));
+
+            if (string.IsNullOrWhiteSpace(sessionCookie))
+                throw new InvalidOperationException("SAP Service Layer devolvió cookies vacías.");
+
+            return sessionCookie;
+        }
+
+        private static Uri BuildEndpoint(TenantServiceLayerSettings serviceLayer, string resource)
+        {
+            var baseUrl = serviceLayer.BaseUrl.TrimEnd('/');
+            return new Uri($"{baseUrl}/{resource.TrimStart('/')}", UriKind.Absolute);
+        }
+
+        private async Task LogoutAsync(
+    HttpClient httpClient,
+    TenantServiceLayerSettings serviceLayer,
+    string sessionCookie,
+    CancellationToken cancellationToken)
+        {
+            try
+            {
+                using var request = new HttpRequestMessage(
+                    HttpMethod.Post,
+                    BuildEndpoint(serviceLayer, "Logout"));
+
+                request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                request.Headers.Add("Cookie", sessionCookie);
+
+                using var response = await httpClient.SendAsync(request, cancellationToken);
+
+                // No lanzamos excepción aquí para no ocultar errores reales del Create.
+            }
+            catch
+            {
+                // Intencionalmente silencioso.
+                // El logout no debe romper el flujo principal.
+            }
+        }
+
+        private static StringContent CreateJsonContent<TPayload>(TPayload payload)
+        {
+            var json = JsonSerializer.Serialize(payload);
+            return new StringContent(json, encoding: null, mediaType: "application/json");
         }
 
         public async Task UpdatePasswordAsync(
