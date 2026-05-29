@@ -3,92 +3,81 @@
     ViewData["Title"] = "Administración - Países";
 }
 
-<div class="admin-module-header admin-hero">
+<div class="admin-compact-header">
     <div>
-        <span class="eyebrow">Submódulo de administración</span>
-        <h2>Registro de países del mundial</h2>
-        <p>Administra códigos y nombres con una experiencia más clara: selección previa, contexto del registro y ayudas de formato.</p>
+        <span class="eyebrow">Administración de copa</span>
+        <h2>Países</h2>
+        <p>Gestiona códigos y nombres desde una vista compacta de selección y edición.</p>
     </div>
     <div class="admin-module-actions">
-        <a class="btn btn-secondary" asp-action="Players">Ir a jugadores</a>
-        <a class="btn btn-secondary" asp-action="Matches">Ir a partidos</a>
+        <a class="btn btn-secondary" asp-action="Players">Jugadores</a>
+        <a class="btn btn-secondary" asp-action="Matches">Partidos</a>
     </div>
 </div>
 
-<section class="admin-editor-shell" aria-labelledby="country-editor-title">
-    <div class="cup-card admin-module-card admin-editor-card">
-        <div class="cup-card-header admin-card-header">
+<section class="admin-workspace" data-admin-editor-scope>
+    <div class="cup-card admin-list-panel">
+        <div class="admin-panel-heading">
             <div>
-                <span class="eyebrow">Paso 2 · Editar</span>
-                <h3 id="country-editor-title">Actualizar país seleccionado</h3>
-                <p class="admin-selection-help" data-admin-editor-help>Selecciona un país de la tabla para habilitar la edición.</p>
+                <span class="eyebrow">Paso 1</span>
+                <h3>Buscar y seleccionar</h3>
+            </div>
+            <span class="admin-record-count" data-admin-grid-count>@Model.Countries.Count registros</span>
+        </div>
+        <div class="admin-table-toolbar admin-table-toolbar-compact">
+            <label class="admin-search-field">
+                <span>Buscar país</span>
+                <input type="search" placeholder="ID, código país, nombre o nombre SAP" data-admin-grid-search />
+            </label>
+        </div>
+        <div class="table-wrapper admin-table admin-table-compact" data-admin-editor-grid>
+            <table>
+                <thead><tr><th>ID</th><th>Código país</th><th>Nombre país</th><th>Nombre SAP</th></tr></thead>
+                <tbody>
+                @foreach (var country in Model.Countries)
+                {
+                    <tr class="admin-selectable-row" tabindex="0" data-summary-title="@country.CountryName" data-summary-detail="@country.CountryCode" data-field-code="@country.Code" data-field-country-code="@country.CountryCode" data-field-country-name="@country.CountryName" data-field-name="@country.Name"><td class="text-strong">@country.Code</td><td><span class="admin-table-chip">@country.CountryCode</span></td><td>@country.CountryName</td><td>@country.Name</td></tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <aside class="cup-card admin-module-card admin-editor-card admin-editor-panel" aria-labelledby="country-editor-title">
+        <div class="admin-panel-heading admin-editor-heading">
+            <div>
+                <span class="eyebrow">Paso 2</span>
+                <h3 id="country-editor-title">Editar país</h3>
             </div>
             <span class="admin-status-pill" data-admin-editor-status>Sin selección</span>
         </div>
-        <div class="admin-selected-summary" data-admin-selected-summary aria-live="polite">
+        <div class="admin-selected-summary admin-selected-summary-compact" data-admin-selected-summary aria-live="polite">
             <span>País</span>
             <strong>Ningún registro seleccionado</strong>
         </div>
-        <form asp-action="SaveCountry" method="post" class="cup-form admin-friendly-form" data-admin-editor-form>
+        <p class="admin-selection-help" data-admin-editor-help>Selecciona una fila para habilitar el formulario.</p>
+        <form asp-action="SaveCountry" method="post" class="cup-form admin-compact-form" data-admin-editor-form>
             @Html.AntiForgeryToken()
             <div class="form-field is-readonly">
                 <label asp-for="Country.Code">ID interno</label>
-                <input asp-for="Country.Code" class="cup-input" placeholder="ID interno" disabled data-admin-field="code" data-locked="true" />
-                <small>Identificador técnico de referencia.</small>
+                <input asp-for="Country.Code" class="cup-input" placeholder="ID" disabled data-admin-field="code" data-locked="true" />
             </div>
             <div class="form-field">
                 <label asp-for="Country.CountryCode">Código país</label>
-                <input asp-for="Country.CountryCode" class="cup-input" placeholder="Ej. ECU" maxlength="3" disabled data-admin-field="countryCode" />
-                <small>Usa el código de tres letras para la bandera y reportes.</small>
+                <input asp-for="Country.CountryCode" class="cup-input" placeholder="ECU" maxlength="3" disabled data-admin-field="countryCode" />
             </div>
-            <div class="form-field">
+            <div class="form-field form-field-wide">
                 <label asp-for="Country.CountryName">Nombre país</label>
-                <input asp-for="Country.CountryName" class="cup-input" placeholder="Ej. Ecuador" disabled data-admin-field="countryName" />
+                <input asp-for="Country.CountryName" class="cup-input" placeholder="Ecuador" disabled data-admin-field="countryName" />
             </div>
-            <div class="form-field">
+            <div class="form-field form-field-wide">
                 <label asp-for="Country.Name">Nombre SAP</label>
-                <input asp-for="Country.Name" class="cup-input" placeholder="Opcional; si se deja vacío usa el nombre país" disabled data-admin-field="name" />
-                <small>Completa solo si SAP necesita un nombre diferente.</small>
+                <input asp-for="Country.Name" class="cup-input" placeholder="Opcional" disabled data-admin-field="name" />
             </div>
             <div class="admin-form-actions">
-                <button type="button" class="btn btn-light" data-admin-editor-clear disabled>Limpiar selección</button>
-                <button type="submit" class="btn btn-primary" disabled data-admin-editor-submit>Guardar país</button>
+                <button type="button" class="btn btn-light" data-admin-editor-clear disabled>Limpiar</button>
+                <button type="submit" class="btn btn-primary" disabled data-admin-editor-submit>Guardar</button>
             </div>
         </form>
-    </div>
-
-    <aside class="cup-card admin-guidance-card" aria-label="Consejos de captura para países">
-        <span class="eyebrow">Paso 1 · Seleccionar</span>
-        <h3>Buenas prácticas</h3>
-        <ul class="admin-guidance-list">
-            <li><strong>Filtra por código</strong> para validar rápidamente si el país ya existe.</li>
-            <li><strong>Respeta el formato</strong> de tres letras para mantener banderas y reportes alineados.</li>
-            <li><strong>Nombre SAP</strong> es opcional cuando coincide con el nombre público del país.</li>
-        </ul>
     </aside>
 </section>
-
-<div class="section-title dashboard-table-title admin-data-title">
-    <div>
-        <span class="eyebrow">Datos actuales</span>
-        <h2>Países del mundial</h2>
-    </div>
-    <span class="admin-record-count" data-admin-grid-count>@Model.Countries.Count registros</span>
-</div>
-<div class="admin-table-toolbar">
-    <label class="admin-search-field">
-        <span>Buscar país</span>
-        <input type="search" placeholder="Filtra por ID, código país, nombre o nombre SAP" data-admin-grid-search />
-    </label>
-</div>
-<div class="table-wrapper admin-table" data-admin-editor-grid>
-    <table>
-        <thead><tr><th>ID</th><th>Código país</th><th>Nombre país</th><th>Nombre SAP</th></tr></thead>
-        <tbody>
-        @foreach (var country in Model.Countries)
-        {
-            <tr class="admin-selectable-row" tabindex="0" data-summary-title="@country.CountryName" data-summary-detail="@country.CountryCode" data-field-code="@country.Code" data-field-country-code="@country.CountryCode" data-field-country-name="@country.CountryName" data-field-name="@country.Name"><td class="text-strong">@country.Code</td><td><span class="admin-table-chip">@country.CountryCode</span></td><td>@country.CountryName</td><td>@country.Name</td></tr>
-        }
-        </tbody>
-    </table>
-</div>

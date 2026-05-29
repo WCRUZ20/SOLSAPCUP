@@ -1271,3 +1271,191 @@ td {
         width: 100%;
     }
 }
+
+/* Compact admin layout: optimized for dense data entry on Players, Matches and Countries. */
+.admin-compact-header {
+    align-items: center;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.04);
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    padding: 14px 16px;
+}
+
+.admin-compact-header h2 {
+    font-size: 24px;
+    margin: 2px 0 3px;
+}
+
+.admin-compact-header p {
+    color: #666;
+    font-size: 14px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.admin-compact-header .btn,
+.admin-workspace .btn {
+    border-radius: 10px;
+    padding: 9px 13px;
+}
+
+.admin-workspace {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 420px);
+    min-height: 0;
+}
+
+.admin-list-panel,
+.admin-editor-panel {
+    border-radius: 16px;
+    min-width: 0;
+    padding: 14px;
+}
+
+.admin-list-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.admin-editor-panel {
+    align-self: start;
+    margin-bottom: 0;
+    position: sticky;
+    top: 0;
+}
+
+.admin-panel-heading {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.admin-panel-heading h3 {
+    font-size: 18px;
+    margin: 1px 0 0;
+}
+
+.admin-editor-heading {
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+}
+
+.admin-selected-summary-compact {
+    border-radius: 12px;
+    margin-bottom: 8px;
+    padding: 10px 12px;
+}
+
+.admin-selected-summary-compact strong {
+    font-size: 15px;
+}
+
+.admin-workspace .admin-selection-help {
+    font-size: 12px;
+    margin: 0 0 10px;
+}
+
+.admin-compact-form {
+    gap: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-compact-form .form-field {
+    gap: 4px;
+}
+
+.admin-compact-form label,
+.admin-table-toolbar-compact .admin-search-field span {
+    font-size: 12px;
+}
+
+.admin-compact-form input,
+.admin-compact-form textarea,
+.admin-table-toolbar-compact input {
+    border-radius: 10px;
+    font-size: 14px;
+    min-height: 36px;
+    padding: 7px 9px;
+}
+
+.admin-compact-form textarea {
+    min-height: 68px;
+    resize: vertical;
+}
+
+.admin-compact-form .score-field input {
+    font-size: 18px;
+}
+
+.admin-compact-form .admin-form-actions {
+    margin-top: 0;
+    padding-top: 10px;
+}
+
+.admin-table-toolbar-compact {
+    border-radius: 12px;
+    box-shadow: none;
+    flex-shrink: 0;
+    margin-bottom: 10px;
+    padding: 10px;
+}
+
+.admin-table-compact {
+    flex: 1 1 auto;
+    max-height: calc(100vh - 300px);
+    min-height: 320px;
+}
+
+.admin-table-compact th,
+.admin-table-compact td {
+    font-size: 13px;
+    padding: 9px 10px;
+    vertical-align: middle;
+}
+
+.admin-table-compact th {
+    white-space: nowrap;
+}
+
+.admin-table-compact .admin-table-chip,
+.admin-workspace .admin-record-count,
+.admin-workspace .admin-status-pill {
+    font-size: 12px;
+    padding: 6px 9px;
+}
+
+@media (max-width: 1180px) {
+    .admin-workspace {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-editor-panel {
+        position: static;
+    }
+}
+
+@media (max-width: 720px) {
+    .admin-compact-header,
+    .admin-panel-heading {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .admin-compact-form {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-table-compact {
+        max-height: none;
+    }
+}

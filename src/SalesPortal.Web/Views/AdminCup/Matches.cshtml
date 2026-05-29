@@ -3,33 +3,60 @@
     ViewData["Title"] = "Administración - Partidos";
 }
 
-<div class="admin-module-header admin-hero">
+<div class="admin-compact-header">
     <div>
-        <span class="eyebrow">Submódulo de administración</span>
-        <h2>Registro de partidos</h2>
-        <p>Actualiza resultados de forma segura con selección previa, resumen visible y campos editables enfocados en marcador y observación.</p>
+        <span class="eyebrow">Administración de copa</span>
+        <h2>Partidos</h2>
+        <p>Ubica un partido y registra marcador u observación sin perder contexto del encuentro.</p>
     </div>
     <div class="admin-module-actions">
-        <a class="btn btn-secondary" asp-action="Players">Ir a jugadores</a>
-        <a class="btn btn-secondary" asp-action="Countries">Ir a países</a>
+        <a class="btn btn-secondary" asp-action="Players">Jugadores</a>
+        <a class="btn btn-secondary" asp-action="Countries">Países</a>
     </div>
 </div>
 
-<section class="admin-editor-shell" aria-labelledby="match-editor-title">
-    <div class="cup-card admin-module-card admin-editor-card">
-        <div class="cup-card-header admin-card-header">
+<section class="admin-workspace" data-admin-editor-scope>
+    <div class="cup-card admin-list-panel">
+        <div class="admin-panel-heading">
             <div>
-                <span class="eyebrow">Paso 2 · Editar</span>
-                <h3 id="match-editor-title">Actualizar partido seleccionado</h3>
-                <p class="admin-selection-help" data-admin-editor-help>Primero selecciona una fila de la tabla para habilitar la edición.</p>
+                <span class="eyebrow">Paso 1</span>
+                <h3>Buscar y seleccionar</h3>
+            </div>
+            <span class="admin-record-count" data-admin-grid-count>@Model.Matches.Count registros</span>
+        </div>
+        <div class="admin-table-toolbar admin-table-toolbar-compact">
+            <label class="admin-search-field">
+                <span>Buscar partido</span>
+                <input type="search" placeholder="Código, fecha, jugador, resultado u observación" data-admin-grid-search />
+            </label>
+        </div>
+        <div class="table-wrapper admin-table admin-table-compact" data-admin-editor-grid>
+            <table>
+                <thead><tr><th>Código</th><th>Nombre</th><th>Fecha</th><th>Hora</th><th>J1</th><th>J2</th><th>Resultado</th><th>Observación</th></tr></thead>
+                <tbody>
+                @foreach (var match in Model.Matches)
+                {
+                    <tr class="admin-selectable-row" tabindex="0" data-summary-title="@match.Name" data-summary-detail="@match.Player1 vs @match.Player2" data-field-code="@match.Code" data-field-name="@match.Name" data-field-match-date="@(match.MatchDate?.ToString("yyyy-MM-dd") ?? string.Empty)" data-field-match-time="@(match.MatchTime?.ToString("0000") ?? string.Empty)" data-field-player1="@match.Player1" data-field-player2="@match.Player2" data-field-goals-player1="@(match.GoalsPlayer1?.ToString("0") ?? string.Empty)" data-field-goals-player2="@(match.GoalsPlayer2?.ToString("0") ?? string.Empty)" data-field-observation="@match.Observation"><td class="text-strong">@match.Code</td><td>@match.Name</td><td>@(match.MatchDate?.ToString("dd/MM/yyyy") ?? "--")</td><td>@(match.MatchTime?.ToString("0000") ?? "--")</td><td>@match.Player1</td><td>@match.Player2</td><td><span class="admin-table-chip">@(match.GoalsPlayer1.HasValue || match.GoalsPlayer2.HasValue ? $"{match.GoalsPlayer1?.ToString("0") ?? "-"} - {match.GoalsPlayer2?.ToString("0") ?? "-"}" : "Pendiente")</span></td><td>@match.Observation</td></tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <aside class="cup-card admin-module-card admin-editor-card admin-editor-panel" aria-labelledby="match-editor-title">
+        <div class="admin-panel-heading admin-editor-heading">
+            <div>
+                <span class="eyebrow">Paso 2</span>
+                <h3 id="match-editor-title">Editar partido</h3>
             </div>
             <span class="admin-status-pill" data-admin-editor-status>Sin selección</span>
         </div>
-        <div class="admin-selected-summary" data-admin-selected-summary aria-live="polite">
+        <div class="admin-selected-summary admin-selected-summary-compact" data-admin-selected-summary aria-live="polite">
             <span>Partido</span>
             <strong>Ningún registro seleccionado</strong>
         </div>
-        <form asp-action="SaveMatch" method="post" class="cup-form admin-friendly-form" data-admin-editor-form>
+        <p class="admin-selection-help" data-admin-editor-help>Selecciona una fila para habilitar marcador y observación.</p>
+        <form asp-action="SaveMatch" method="post" class="cup-form admin-compact-form" data-admin-editor-form>
             @Html.AntiForgeryToken()
             <div class="form-field is-readonly">
                 <label asp-for="Match.Code">Código</label>
@@ -37,7 +64,7 @@
             </div>
             <div class="form-field is-readonly">
                 <label asp-for="Match.Name">Nombre</label>
-                <input asp-for="Match.Name" class="cup-input" placeholder="Nombre del partido" disabled data-admin-field="name" data-locked="true" />
+                <input asp-for="Match.Name" class="cup-input" placeholder="Nombre" disabled data-admin-field="name" data-locked="true" />
             </div>
             <div class="form-field is-readonly">
                 <label asp-for="Match.MatchDate">Fecha</label>
@@ -46,7 +73,6 @@
             <div class="form-field is-readonly">
                 <label asp-for="Match.MatchTime">Hora</label>
                 <input asp-for="Match.MatchTime" class="cup-input" placeholder="HHMM" disabled data-admin-field="matchTime" data-locked="true" />
-                <small>Formato de referencia HHMM.</small>
             </div>
             <div class="form-field is-readonly">
                 <label asp-for="Match.Player1">Jugador 1</label>
@@ -57,57 +83,21 @@
                 <input asp-for="Match.Player2" class="cup-input" placeholder="Jugador 2" disabled data-admin-field="player2" data-locked="true" />
             </div>
             <div class="form-field score-field">
-                <label asp-for="Match.GoalsPlayer1">Goles jugador 1</label>
+                <label asp-for="Match.GoalsPlayer1">Goles J1</label>
                 <input asp-for="Match.GoalsPlayer1" class="cup-input" type="number" step="1" min="0" placeholder="0" disabled data-admin-field="goalsPlayer1" />
             </div>
             <div class="form-field score-field">
-                <label asp-for="Match.GoalsPlayer2">Goles jugador 2</label>
+                <label asp-for="Match.GoalsPlayer2">Goles J2</label>
                 <input asp-for="Match.GoalsPlayer2" class="cup-input" type="number" step="1" min="0" placeholder="0" disabled data-admin-field="goalsPlayer2" />
             </div>
             <div class="form-field form-field-wide">
                 <label asp-for="Match.Observation">Observación</label>
-                <textarea asp-for="Match.Observation" class="cup-input cup-comments-input" placeholder="Agrega notas del resultado, incidencias o estado del partido" disabled data-admin-field="observation"></textarea>
-                <small>Opcional. Mantén la nota breve y útil para auditoría.</small>
+                <textarea asp-for="Match.Observation" class="cup-input cup-comments-input" placeholder="Nota breve" disabled data-admin-field="observation"></textarea>
             </div>
             <div class="admin-form-actions">
-                <button type="button" class="btn btn-light" data-admin-editor-clear disabled>Limpiar selección</button>
-                <button type="submit" class="btn btn-primary" disabled data-admin-editor-submit>Guardar partido</button>
+                <button type="button" class="btn btn-light" data-admin-editor-clear disabled>Limpiar</button>
+                <button type="submit" class="btn btn-primary" disabled data-admin-editor-submit>Guardar</button>
             </div>
         </form>
-    </div>
-
-    <aside class="cup-card admin-guidance-card" aria-label="Consejos de captura para partidos">
-        <span class="eyebrow">Paso 1 · Seleccionar</span>
-        <h3>Captura rápida</h3>
-        <ul class="admin-guidance-list">
-            <li><strong>Encuentra el partido</strong> por código, jugador o fecha antes de editar.</li>
-            <li><strong>Registra solo el marcador</strong>; los datos del encuentro quedan bloqueados como contexto.</li>
-            <li><strong>Usa observaciones</strong> para incidencias, partidos aplazados o validaciones pendientes.</li>
-        </ul>
     </aside>
 </section>
-
-<div class="section-title dashboard-table-title admin-data-title">
-    <div>
-        <span class="eyebrow">Datos actuales</span>
-        <h2>Partidos</h2>
-    </div>
-    <span class="admin-record-count" data-admin-grid-count>@Model.Matches.Count registros</span>
-</div>
-<div class="admin-table-toolbar">
-    <label class="admin-search-field">
-        <span>Buscar partido</span>
-        <input type="search" placeholder="Filtra por código, fecha, jugador, resultado u observación" data-admin-grid-search />
-    </label>
-</div>
-<div class="table-wrapper admin-table" data-admin-editor-grid>
-    <table>
-        <thead><tr><th>Código</th><th>Nombre</th><th>Fecha</th><th>Hora</th><th>J1</th><th>J2</th><th>Resultado</th><th>Observación</th></tr></thead>
-        <tbody>
-        @foreach (var match in Model.Matches)
-        {
-            <tr class="admin-selectable-row" tabindex="0" data-summary-title="@match.Name" data-summary-detail="@match.Player1 vs @match.Player2" data-field-code="@match.Code" data-field-name="@match.Name" data-field-match-date="@(match.MatchDate?.ToString("yyyy-MM-dd") ?? string.Empty)" data-field-match-time="@(match.MatchTime?.ToString("0000") ?? string.Empty)" data-field-player1="@match.Player1" data-field-player2="@match.Player2" data-field-goals-player1="@(match.GoalsPlayer1?.ToString("0") ?? string.Empty)" data-field-goals-player2="@(match.GoalsPlayer2?.ToString("0") ?? string.Empty)" data-field-observation="@match.Observation"><td class="text-strong">@match.Code</td><td>@match.Name</td><td>@(match.MatchDate?.ToString("dd/MM/yyyy") ?? "--")</td><td>@(match.MatchTime?.ToString("0000") ?? "--")</td><td>@match.Player1</td><td>@match.Player2</td><td><span class="admin-table-chip">@(match.GoalsPlayer1.HasValue || match.GoalsPlayer2.HasValue ? $"{match.GoalsPlayer1?.ToString("0") ?? "-"} - {match.GoalsPlayer2?.ToString("0") ?? "-"}" : "Pendiente")</span></td><td>@match.Observation</td></tr>
-        }
-        </tbody>
-    </table>
-</div>

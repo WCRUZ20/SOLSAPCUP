@@ -8,8 +8,7 @@
 
     function initializeAdminGridEditors() {
         document.querySelectorAll('[data-admin-editor-form]').forEach(function (form) {
-            var card = form.closest('.admin-module-card');
-            var scope = card ? card.parentElement.parentElement : document;
+            var scope = form.closest('[data-admin-editor-scope]') || document;
             var grid = scope.querySelector('[data-admin-editor-grid]');
             var search = scope.querySelector('[data-admin-grid-search]');
             var count = scope.querySelector('[data-admin-grid-count]');
