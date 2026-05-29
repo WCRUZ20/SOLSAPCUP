@@ -1,3 +1,4 @@
+@using System.Globalization
 @model SalesPortal.Web.Models.Cup.AdminCupMatchesViewModel
 @{
     ViewData["Title"] = "Administración - Partidos";
@@ -17,21 +18,22 @@
     <div class="cup-card-header">
         <div>
             <span class="eyebrow">Partidos</span>
-            <h3>Registrar / actualizar partido</h3>
+            <h3>Actualizar partido seleccionado</h3>
+            <p>Selecciona una fila del grid para cargar sus datos. Código, nombre, fecha, hora y jugadores son solo lectura.</p>
         </div>
     </div>
-    <form asp-action="SaveMatch" method="post" class="cup-form">
+    <form asp-action="SaveMatch" method="post" class="cup-form" data-grid-edit-form>
         @Html.AntiForgeryToken()
-        <input asp-for="Match.Code" class="cup-input" placeholder="Código" />
-        <input asp-for="Match.Name" class="cup-input" placeholder="Nombre" />
-        <input asp-for="Match.MatchDate" type="date" class="cup-input" />
-        <input asp-for="Match.MatchTime" class="cup-input" placeholder="Hora (HHMM)" />
-        <input asp-for="Match.Player1" class="cup-input" placeholder="Jugador 1" />
-        <input asp-for="Match.Player2" class="cup-input" placeholder="Jugador 2" />
-        <input asp-for="Match.GoalsPlayer1" class="cup-input" placeholder="Goles J1" />
-        <input asp-for="Match.GoalsPlayer2" class="cup-input" placeholder="Goles J2" />
-        <textarea asp-for="Match.Observation" class="cup-input cup-comments-input" placeholder="Observación"></textarea>
-        <button type="submit" class="btn btn-primary">Guardar partido</button>
+        <input asp-for="Match.Code" class="cup-input" placeholder="Código" data-field="code" data-editable="false" disabled />
+        <input asp-for="Match.Name" class="cup-input" placeholder="Nombre" data-field="name" data-editable="false" disabled />
+        <input asp-for="Match.MatchDate" type="date" class="cup-input" data-field="matchDate" data-editable="false" disabled />
+        <input asp-for="Match.MatchTime" class="cup-input" placeholder="Hora (HHMM)" data-field="matchTime" data-editable="false" disabled />
+        <input asp-for="Match.Player1" class="cup-input" placeholder="Jugador 1" data-field="player1" data-editable="false" disabled />
+        <input asp-for="Match.Player2" class="cup-input" placeholder="Jugador 2" data-field="player2" data-editable="false" disabled />
+        <input asp-for="Match.GoalsPlayer1" class="cup-input" placeholder="Goles J1" data-field="goalsPlayer1" data-editable="true" disabled />
+        <input asp-for="Match.GoalsPlayer2" class="cup-input" placeholder="Goles J2" data-field="goalsPlayer2" data-editable="true" disabled />
+        <textarea asp-for="Match.Observation" class="cup-input cup-comments-input" placeholder="Observación" data-field="observation" data-editable="true" disabled></textarea>
+        <button type="submit" class="btn btn-primary" disabled>Guardar partido</button>
     </form>
 </section>
 
@@ -41,13 +43,31 @@
         <h2>Partidos</h2>
     </div>
 </div>
-<div class="table-wrapper admin-table">
+<div class="table-wrapper admin-table" data-grid-edit-table>
     <table>
         <thead><tr><th>Código</th><th>Nombre</th><th>Fecha</th><th>Hora</th><th>J1</th><th>J2</th><th>Resultado</th><th>Observación</th></tr></thead>
         <tbody>
         @foreach (var match in Model.Matches)
         {
-            <tr><td class="text-strong">@match.Code</td><td>@match.Name</td><td>@(match.MatchDate?.ToString("dd/MM/yyyy") ?? "--")</td><td>@(match.MatchTime?.ToString("0000") ?? "--")</td><td>@match.Player1</td><td>@match.Player2</td><td>@(match.GoalsPlayer1.HasValue || match.GoalsPlayer2.HasValue ? $"{match.GoalsPlayer1?.ToString("0") ?? "-"} - {match.GoalsPlayer2?.ToString("0") ?? "-"}" : "Pendiente")</td><td>@match.Observation</td></tr>
+            <tr tabindex="0"
+                data-code="@match.Code"
+                data-name="@match.Name"
+                data-match-date="@(match.MatchDate?.ToString("yyyy-MM-dd") ?? string.Empty)"
+                data-match-time="@(match.MatchTime?.ToString("0000", CultureInfo.InvariantCulture) ?? string.Empty)"
+                data-player1="@match.Player1"
+                data-player2="@match.Player2"
+                data-goals-player1="@(match.GoalsPlayer1?.ToString(CultureInfo.InvariantCulture) ?? string.Empty)"
+                data-goals-player2="@(match.GoalsPlayer2?.ToString(CultureInfo.InvariantCulture) ?? string.Empty)"
+                data-observation="@match.Observation">
+                <td class="text-strong">@match.Code</td>
+                <td>@match.Name</td>
+                <td>@(match.MatchDate?.ToString("dd/MM/yyyy") ?? "--")</td>
+                <td>@(match.MatchTime?.ToString("0000") ?? "--")</td>
+                <td>@match.Player1</td>
+                <td>@match.Player2</td>
+                <td>@(match.GoalsPlayer1.HasValue || match.GoalsPlayer2.HasValue ? $"{match.GoalsPlayer1?.ToString("0") ?? "-"} - {match.GoalsPlayer2?.ToString("0") ?? "-"}" : "Pendiente")</td>
+                <td>@match.Observation</td>
+            </tr>
         }
         </tbody>
     </table>

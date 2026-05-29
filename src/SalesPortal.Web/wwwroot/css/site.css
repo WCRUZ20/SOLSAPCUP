@@ -1003,3 +1003,32 @@ td {
     font-weight: 900;
     justify-content: center;
 }
+
+.admin-table tbody tr {
+    cursor: pointer;
+    transition: background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.admin-table tbody tr:hover,
+.admin-table tbody tr:focus-visible {
+    background: var(--orange-light);
+    outline: none;
+}
+
+.admin-table tbody tr.is-selected {
+    background: var(--orange-light);
+    box-shadow: inset 4px 0 0 var(--orange);
+}
+
+.cup-form input:disabled,
+.cup-form textarea:disabled,
+.cup-form select:disabled,
+.cup-form .is-readonly {
+    background: #f3f3f3;
+    color: #777;
+    cursor: not-allowed;
+}
+
+.cup-form .is-readonly {
+    border-style: dashed;
+}

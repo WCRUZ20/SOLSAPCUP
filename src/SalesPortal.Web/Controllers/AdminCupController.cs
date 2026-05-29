@@ -49,12 +49,22 @@ public sealed class AdminCupController : Controller
         }
 
         var tenant = _tenantResolver.ResolveByHost(HttpContext.Request.Host.Value);
+        var selectedCode = model.Competitor.Code.Trim();
+        var existingCompetitor = (await _cupRepository.GetCompetitorsAsync(tenant, cancellationToken))
+            .FirstOrDefault(c => string.Equals(c.Code, selectedCode, StringComparison.OrdinalIgnoreCase));
+
+        if (existingCompetitor is null)
+        {
+            TempData["Error"] = "Seleccione un jugador existente desde el grid antes de editar.";
+            return RedirectToAction(nameof(Players));
+        }
+
         await _cupRepository.SaveCompetitorAsync(tenant, new Competitor
         {
-            Code = model.Competitor.Code.Trim(),
-            Name = model.Competitor.Name.Trim(),
-            PlayerId = model.Competitor.PlayerId?.Trim() ?? string.Empty,
-            Team = model.Competitor.Team?.Trim() ?? string.Empty,
+            Code = existingCompetitor.Code,
+            Name = existingCompetitor.Name,
+            PlayerId = existingCompetitor.PlayerId,
+            Team = existingCompetitor.Team,
             Matches = model.Competitor.Matches,
             Points = model.Competitor.Points,
             GoalDifference = model.Competitor.GoalDifference,
@@ -101,14 +111,24 @@ public sealed class AdminCupController : Controller
         }
 
         var tenant = _tenantResolver.ResolveByHost(HttpContext.Request.Host.Value);
+        var selectedCode = model.Match.Code.Trim();
+        var existingMatch = (await _cupRepository.GetMatchesAsync(tenant, cancellationToken))
+            .FirstOrDefault(m => string.Equals(m.Code, selectedCode, StringComparison.OrdinalIgnoreCase));
+
+        if (existingMatch is null)
+        {
+            TempData["Error"] = "Seleccione un partido existente desde el grid antes de editar.";
+            return RedirectToAction(nameof(Matches));
+        }
+
         await _cupRepository.SaveMatchAsync(tenant, new CupMatch
         {
-            Code = model.Match.Code.Trim(),
-            Name = model.Match.Name.Trim(),
-            MatchDate = model.Match.MatchDate,
-            MatchTime = model.Match.MatchTime,
-            Player1 = model.Match.Player1?.Trim() ?? string.Empty,
-            Player2 = model.Match.Player2?.Trim() ?? string.Empty,
+            Code = existingMatch.Code,
+            Name = existingMatch.Name,
+            MatchDate = existingMatch.MatchDate,
+            MatchTime = existingMatch.MatchTime,
+            Player1 = existingMatch.Player1,
+            Player2 = existingMatch.Player2,
             GoalsPlayer1 = model.Match.GoalsPlayer1,
             GoalsPlayer2 = model.Match.GoalsPlayer2,
             Observation = model.Match.Observation?.Trim() ?? string.Empty
