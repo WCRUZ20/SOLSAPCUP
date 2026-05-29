@@ -1432,6 +1432,10 @@ td {
     font-size: 18px;
 }
 
+.admin-compact-form .match-goals-field input {
+    width: 100%;
+}
+
 .admin-compact-form .admin-form-actions {
     margin-top: 0;
     padding-top: 10px;
