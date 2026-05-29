@@ -32,7 +32,7 @@
         </div>
         <div class="table-wrapper admin-table admin-table-compact" data-admin-editor-grid>
             <table>
-                <thead><tr><th>Código</th><th>País</th><th>ID jugador</th><th>Equipo</th><th>PJ</th><th>Pts</th><th>DG</th><th>Pos.</th><th>Estado</th></tr></thead>
+                <thead><tr><th>Código</th><th>País</th>@* <th>ID jugador</th><th>Equipo</th> *@<th>PJ</th><th>Pts</th><th>DG</th><th>Pos.</th><th>Estado</th></tr></thead>
                 <tbody>
                 @foreach (var competitor in Model.Competitors)
                 {
@@ -56,8 +56,8 @@
                                 <span class="visually-hidden">@competitorCountryLabel</span>
                             </span>
                         </td>
-                        <td>@competitor.PlayerId</td>
-                        <td>@competitor.Team</td>
+                        @* <td>@competitor.PlayerId</td>
+                        <td>@competitor.Team</td> *@
                         <td>@competitor.Matches.ToString("0")</td>
                         <td>@competitor.Points.ToString("0")</td>
                         <td>@competitor.GoalDifference.ToString("+0;-0;0")</td>
