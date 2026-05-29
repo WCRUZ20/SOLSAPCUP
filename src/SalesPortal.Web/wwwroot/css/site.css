@@ -1054,6 +1054,10 @@ td {
     justify-content: flex-end;
 }
 
+.admin-inline-action {
+    margin: 0;
+}
+
 .admin-editor-shell {
     align-items: start;
     display: grid;

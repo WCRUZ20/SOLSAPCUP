@@ -10,6 +10,10 @@
         <p>Agrega, modifica o elimina partidos manteniendo la tabla visible.</p>
     </div>
     <div class="admin-module-actions">
+        <form asp-action="CalculateMatches" method="post" class="admin-inline-action" onsubmit="return confirm('¿Calcular el calendario con todos los jugadores activos?');">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-primary">Calcular partidos</button>
+        </form>
         <a class="btn btn-secondary" asp-action="Players">Jugadores</a>
         <a class="btn btn-secondary" asp-action="Countries">Países</a>
     </div>

@@ -122,6 +122,87 @@ public sealed class AdminCupController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CalculateMatches(CancellationToken cancellationToken)
+    {
+        var tenant = _tenantResolver.ResolveByHost(HttpContext.Request.Host.Value);
+        var competitors = await _cupRepository.GetCompetitorsAsync(tenant, cancellationToken);
+        var activeCompetitors = competitors
+            .Where(IsActiveCompetitor)
+            .OrderBy(competitor => competitor.TablePosition <= 0 ? decimal.MaxValue : competitor.TablePosition)
+            .ThenBy(competitor => competitor.Name, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(competitor => competitor.Code, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (activeCompetitors.Count < 2)
+        {
+            TempData["Error"] = "Se necesitan al menos dos jugadores activos para calcular partidos.";
+            return RedirectToAction(nameof(Matches));
+        }
+
+        if (activeCompetitors.Count % 2 != 0)
+        {
+            TempData["Error"] = "La cantidad de jugadores activos debe ser par para calcular partidos.";
+            return RedirectToAction(nameof(Matches));
+        }
+
+        var existingMatches = await _cupRepository.GetMatchesAsync(tenant, cancellationToken);
+        var schedule = BuildRoundRobinSchedule(activeCompetitors, DateTime.Today);
+        var usedCodes = existingMatches
+            .Select(match => match.Code)
+            .Where(code => !string.IsNullOrWhiteSpace(code))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var createdCount = 0;
+        var updatedCount = 0;
+
+        foreach (var scheduledMatch in schedule)
+        {
+            var existingMatch = FindExistingMatchForPair(existingMatches, scheduledMatch.Player1, scheduledMatch.Player2, activeCompetitors);
+
+            if (existingMatch == null)
+            {
+                var code = BuildNextMatchCode(usedCodes);
+                usedCodes.Add(code);
+
+                await _cupRepository.SaveMatchAsync(tenant, new CupMatch
+                {
+                    Code = code,
+                    Name = scheduledMatch.Name,
+                    MatchDate = scheduledMatch.MatchDate,
+                    MatchTime = scheduledMatch.MatchTime,
+                    Player1 = scheduledMatch.Player1.Code,
+                    Player2 = scheduledMatch.Player2.Code,
+                    Observation = scheduledMatch.Observation
+                }, cancellationToken);
+                createdCount++;
+                continue;
+            }
+
+            if (!IsPendingMatch(existingMatch) || existingMatch.MatchDate.HasValue)
+                continue;
+
+            existingMatch.MatchDate = scheduledMatch.MatchDate;
+            existingMatch.MatchTime = scheduledMatch.MatchTime;
+
+            if (string.IsNullOrWhiteSpace(existingMatch.Name))
+                existingMatch.Name = scheduledMatch.Name;
+
+            if (string.IsNullOrWhiteSpace(existingMatch.Observation))
+                existingMatch.Observation = scheduledMatch.Observation;
+
+            await _cupRepository.SaveMatchAsync(tenant, existingMatch, cancellationToken);
+            updatedCount++;
+        }
+
+        await RefreshStandingsAsync(tenant, cancellationToken);
+
+        TempData["Success"] = createdCount == 0 && updatedCount == 0
+            ? $"El calendario ya estaba completo para {activeCompetitors.Count} jugadores activos."
+            : $"Calendario calculado: {createdCount} partidos creados y {updatedCount} partidos actualizados para {activeCompetitors.Count} jugadores activos.";
+        return RedirectToAction(nameof(Matches));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteCompetitor(string code, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(code))
@@ -170,6 +251,128 @@ public sealed class AdminCupController : Controller
 
         TempData["Success"] = "País eliminado correctamente.";
         return RedirectToAction(nameof(Countries));
+    }
+
+
+    private static IReadOnlyList<ScheduledMatch> BuildRoundRobinSchedule(IReadOnlyList<Competitor> competitors, DateTime startDate)
+    {
+        var rotation = competitors.ToList();
+        var rounds = competitors.Count - 1;
+        var matchesPerRound = competitors.Count / 2;
+        var schedule = new List<ScheduledMatch>(rounds * matchesPerRound);
+
+        for (var roundIndex = 0; roundIndex < rounds; roundIndex++)
+        {
+            var matchDate = startDate.Date.AddDays(roundIndex);
+
+            for (var matchIndex = 0; matchIndex < matchesPerRound; matchIndex++)
+            {
+                var player1 = rotation[matchIndex];
+                var player2 = rotation[competitors.Count - 1 - matchIndex];
+
+                if (roundIndex % 2 == 1)
+                    (player1, player2) = (player2, player1);
+
+                schedule.Add(new ScheduledMatch(
+                    player1,
+                    player2,
+                    matchDate,
+                    null,
+                    $"{GetCompetitorDisplayName(player1)} vs {GetCompetitorDisplayName(player2)}",
+                    $"Generado automáticamente - Jornada {roundIndex + 1}"));
+            }
+
+            var last = rotation[^1];
+            rotation.RemoveAt(rotation.Count - 1);
+            rotation.Insert(1, last);
+        }
+
+        return schedule;
+    }
+
+    private static CupMatch? FindExistingMatchForPair(
+        IEnumerable<CupMatch> matches,
+        Competitor player1,
+        Competitor player2,
+        IEnumerable<Competitor> activeCompetitors)
+    {
+        var expectedPairKey = BuildPairKey(player1.Code, player2.Code);
+
+        return matches.FirstOrDefault(match =>
+        {
+            var matchPlayer1 = FindCompetitorForMatchPlayer(match.Player1, activeCompetitors);
+            var matchPlayer2 = FindCompetitorForMatchPlayer(match.Player2, activeCompetitors);
+
+            if (matchPlayer1 == null || matchPlayer2 == null || ReferenceEquals(matchPlayer1, matchPlayer2))
+                return false;
+
+            return string.Equals(expectedPairKey, BuildPairKey(matchPlayer1.Code, matchPlayer2.Code), StringComparison.OrdinalIgnoreCase);
+        });
+    }
+
+    private static Competitor? FindCompetitorForMatchPlayer(string matchPlayer, IEnumerable<Competitor> competitors)
+    {
+        if (string.IsNullOrWhiteSpace(matchPlayer))
+            return null;
+
+        return competitors.FirstOrDefault(competitor => IsSamePlayer(matchPlayer, competitor));
+    }
+
+    private static bool IsActiveCompetitor(Competitor competitor)
+    {
+        return string.IsNullOrWhiteSpace(competitor.Status)
+            || string.Equals(competitor.Status.Trim(), "Activo", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsPendingMatch(CupMatch match)
+    {
+        return !match.GoalsPlayer1.HasValue && !match.GoalsPlayer2.HasValue;
+    }
+
+    private static string BuildNextMatchCode(ISet<string> usedCodes)
+    {
+        var nextNumber = usedCodes
+            .Select(TryGetAutomaticMatchNumber)
+            .DefaultIfEmpty(0)
+            .Max() + 1;
+
+        string code;
+        do
+        {
+            code = $"AUTO{nextNumber:0000}";
+            nextNumber++;
+        }
+        while (usedCodes.Contains(code));
+
+        return code;
+    }
+
+    private static int TryGetAutomaticMatchNumber(string code)
+    {
+        return code.StartsWith("AUTO", StringComparison.OrdinalIgnoreCase)
+            && int.TryParse(code[4..], out var number)
+                ? number
+                : 0;
+    }
+
+    private static string BuildPairKey(string player1Code, string player2Code)
+    {
+        var players = new[] { player1Code.Trim(), player2Code.Trim() }
+            .OrderBy(player => player, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        return string.Join("|", players);
+    }
+
+    private static string GetCompetitorDisplayName(Competitor competitor)
+    {
+        if (!string.IsNullOrWhiteSpace(competitor.Team))
+            return competitor.Team.Trim();
+
+        if (!string.IsNullOrWhiteSpace(competitor.Name))
+            return competitor.Name.Trim();
+
+        return competitor.Code.Trim();
     }
 
     private async Task RefreshStandingsAsync(SalesPortal.Domain.Tenants.Tenant tenant, CancellationToken cancellationToken)
@@ -235,6 +438,15 @@ public sealed class AdminCupController : Controller
             || string.Equals(matchPlayer, competitor.Name, StringComparison.OrdinalIgnoreCase)
             || string.Equals(matchPlayer, competitor.Team, StringComparison.OrdinalIgnoreCase);
     }
+
+
+    private sealed record ScheduledMatch(
+        Competitor Player1,
+        Competitor Player2,
+        DateTime MatchDate,
+        short? MatchTime,
+        string Name,
+        string Observation);
 
     private sealed class CompetitorStatistics
     {
