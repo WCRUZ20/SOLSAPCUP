@@ -1459,3 +1459,21 @@ td {
         max-height: none;
     }
 }
+
+.admin-delete-form {
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+    padding-top: 10px;
+}
+
+.admin-delete-form .btn {
+    margin-top: 0;
+}
+
+@media (max-width: 720px) {
+    .admin-delete-form .btn {
+        width: 100%;
+    }
+}

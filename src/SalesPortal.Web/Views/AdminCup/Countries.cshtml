@@ -7,7 +7,7 @@
     <div>
         <span class="eyebrow">Administración de copa</span>
         <h2>Países</h2>
-        <p>Gestiona códigos y nombres desde una vista compacta de selección y edición.</p>
+        <p>Agrega, modifica o elimina países desde una vista compacta.</p>
     </div>
     <div class="admin-module-actions">
         <a class="btn btn-secondary" asp-action="Players">Jugadores</a>
@@ -47,7 +47,7 @@
         <div class="admin-panel-heading admin-editor-heading">
             <div>
                 <span class="eyebrow">Paso 2</span>
-                <h3 id="country-editor-title">Editar país</h3>
+                <h3 id="country-editor-title">Agregar / editar país</h3>
             </div>
             <span class="admin-status-pill" data-admin-editor-status>Sin selección</span>
         </div>
@@ -55,12 +55,12 @@
             <span>País</span>
             <strong>Ningún registro seleccionado</strong>
         </div>
-        <p class="admin-selection-help" data-admin-editor-help>Selecciona una fila para habilitar el formulario.</p>
+        <p class="admin-selection-help" data-admin-editor-help>Selecciona una fila o crea un registro nuevo.</p>
         <form asp-action="SaveCountry" method="post" class="cup-form admin-compact-form" data-admin-editor-form>
             @Html.AntiForgeryToken()
             <div class="form-field is-readonly">
                 <label asp-for="Country.Code">ID interno</label>
-                <input asp-for="Country.Code" class="cup-input" placeholder="ID" disabled data-admin-field="code" data-locked="true" />
+                <input asp-for="Country.Code" class="cup-input" placeholder="ID" disabled data-admin-field="code" data-locked="true" data-generated-on-create="true" />
             </div>
             <div class="form-field">
                 <label asp-for="Country.CountryCode">Código país</label>
@@ -75,9 +75,15 @@
                 <input asp-for="Country.Name" class="cup-input" placeholder="Opcional" disabled data-admin-field="name" />
             </div>
             <div class="admin-form-actions">
+                <button type="button" class="btn btn-light" data-admin-editor-new>Nuevo</button>
                 <button type="button" class="btn btn-light" data-admin-editor-clear disabled>Limpiar</button>
                 <button type="submit" class="btn btn-primary" disabled data-admin-editor-submit>Guardar</button>
             </div>
+        </form>
+        <form asp-action="DeleteCountry" method="post" class="admin-delete-form" data-admin-delete-form onsubmit="return confirm('¿Eliminar este país?');">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="code" data-admin-delete-key />
+            <button type="submit" class="btn btn-red" data-admin-delete-submit disabled>Eliminar país</button>
         </form>
     </aside>
 </section>

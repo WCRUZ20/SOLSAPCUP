@@ -13,5 +13,8 @@ namespace SalesPortal.Application.Abstractions.Persistence
         Task SaveCompetitorAsync(Tenant tenant, Competitor competitor, CancellationToken cancellationToken);
         Task SaveMatchAsync(Tenant tenant, CupMatch match, CancellationToken cancellationToken);
         Task SaveWorldCupCountryAsync(Tenant tenant, WorldCupCountry country, CancellationToken cancellationToken);
+        Task DeleteCompetitorAsync(Tenant tenant, string code, CancellationToken cancellationToken);
+        Task DeleteMatchAsync(Tenant tenant, string code, CancellationToken cancellationToken);
+        Task DeleteWorldCupCountryAsync(Tenant tenant, int code, CancellationToken cancellationToken);
     }
 }

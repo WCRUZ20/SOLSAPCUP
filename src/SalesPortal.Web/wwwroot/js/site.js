@@ -17,6 +17,10 @@
             var summary = scope.querySelector('[data-admin-selected-summary]');
             var submit = form.querySelector('[data-admin-editor-submit]');
             var clear = form.querySelector('[data-admin-editor-clear]');
+            var create = form.querySelector('[data-admin-editor-new]');
+            var deleteForm = scope.querySelector('[data-admin-delete-form]');
+            var deleteKey = deleteForm ? deleteForm.querySelector('[data-admin-delete-key]') : null;
+            var deleteSubmit = deleteForm ? deleteForm.querySelector('[data-admin-delete-submit]') : null;
             var fields = Array.prototype.slice.call(form.querySelectorAll('[data-admin-field]'));
 
             if (!grid || fields.length === 0) {
@@ -25,12 +29,13 @@
 
             var rows = Array.prototype.slice.call(grid.querySelectorAll('.admin-selectable-row'));
 
-            function setFormEnabled(isEnabled) {
+            function setFormEnabled(isEnabled, isCreate) {
                 fields.forEach(function (field) {
                     var isLocked = field.dataset.locked === 'true';
-                    field.disabled = !isEnabled;
-                    field.readOnly = isEnabled && isLocked;
-                    field.classList.toggle('admin-input-locked', isEnabled && isLocked);
+                    var isGeneratedOnCreate = field.dataset.generatedOnCreate === 'true';
+                    field.disabled = !isEnabled || (isCreate && isGeneratedOnCreate);
+                    field.readOnly = isEnabled && !isCreate && isLocked;
+                    field.classList.toggle('admin-input-locked', isEnabled && !isCreate && isLocked);
                 });
 
                 if (submit) {
@@ -42,13 +47,23 @@
                 }
             }
 
+            function setDeleteEnabled(isEnabled, key) {
+                if (deleteKey) {
+                    deleteKey.value = key || '';
+                }
+
+                if (deleteSubmit) {
+                    deleteSubmit.disabled = !isEnabled;
+                }
+            }
+
             function clearForm() {
                 fields.forEach(function (field) {
                     field.value = '';
                 });
             }
 
-            function updateSummary(row) {
+            function updateSummary(row, isCreate) {
                 if (!summary) {
                     return;
                 }
@@ -59,6 +74,12 @@
                 var titleElement = document.createElement('strong');
                 summary.appendChild(label);
                 summary.appendChild(titleElement);
+
+                if (isCreate) {
+                    label.textContent = 'Modo';
+                    titleElement.textContent = 'Nuevo registro';
+                    return;
+                }
 
                 if (!row) {
                     label.textContent = 'Registro';
@@ -85,16 +106,38 @@
                 });
 
                 clearForm();
-                setFormEnabled(false);
-                updateSummary(null);
+                setFormEnabled(false, false);
+                setDeleteEnabled(false, '');
+                updateSummary(null, false);
 
                 if (help) {
-                    help.textContent = 'Primero selecciona una fila de la tabla para habilitar la edición.';
+                    help.textContent = 'Selecciona una fila o crea un registro nuevo.';
                 }
 
                 if (status) {
                     status.textContent = 'Sin selección';
                     status.classList.remove('is-ready');
+                }
+            }
+
+            function startCreate() {
+                grid.querySelectorAll('.admin-selectable-row.is-selected').forEach(function (selectedRow) {
+                    selectedRow.classList.remove('is-selected');
+                    selectedRow.removeAttribute('aria-selected');
+                });
+
+                clearForm();
+                setFormEnabled(true, true);
+                setDeleteEnabled(false, '');
+                updateSummary(null, true);
+
+                if (help) {
+                    help.textContent = 'Completa los datos del nuevo registro y presiona Guardar.';
+                }
+
+                if (status) {
+                    status.textContent = 'Nuevo registro';
+                    status.classList.add('is-ready');
                 }
             }
 
@@ -112,11 +155,12 @@
                     field.value = value || '';
                 });
 
-                setFormEnabled(true);
-                updateSummary(row);
+                setFormEnabled(true, false);
+                setDeleteEnabled(true, row.dataset.fieldCode || '');
+                updateSummary(row, false);
 
                 if (help) {
-                    help.textContent = 'Registro cargado. Edita los campos habilitados y guarda los cambios.';
+                    help.textContent = 'Registro cargado. Puedes modificarlo o eliminarlo.';
                 }
 
                 if (status) {
@@ -168,6 +212,10 @@
 
             if (clear) {
                 clear.addEventListener('click', resetSelection);
+            }
+
+            if (create) {
+                create.addEventListener('click', startCreate);
             }
         });
     }

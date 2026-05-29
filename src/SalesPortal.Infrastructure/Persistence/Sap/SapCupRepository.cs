@@ -186,6 +186,37 @@ namespace SalesPortal.Infrastructure.Persistence.Sap
             await ExecuteSaveAsync(tenant, sql, command => AddMatchParameters(command, dialect, match), cancellationToken);
         }
 
+
+        public async Task DeleteCompetitorAsync(Tenant tenant, string code, CancellationToken cancellationToken)
+        {
+            var dialect = SapSqlDialect.For(tenant);
+            var sql = $@"
+                DELETE FROM {dialect.Table("@SS_COMPETITORS_CUP")}
+                WHERE {dialect.Identifier("Code")} = {dialect.Parameter(0)}";
+
+            await ExecuteSaveAsync(tenant, sql, command => AddParameter(command, dialect.Parameter(0), code), cancellationToken);
+        }
+
+        public async Task DeleteMatchAsync(Tenant tenant, string code, CancellationToken cancellationToken)
+        {
+            var dialect = SapSqlDialect.For(tenant);
+            var sql = $@"
+                DELETE FROM {dialect.Table("@SS_MATCHES")}
+                WHERE {dialect.Identifier("Code")} = {dialect.Parameter(0)}";
+
+            await ExecuteSaveAsync(tenant, sql, command => AddParameter(command, dialect.Parameter(0), code), cancellationToken);
+        }
+
+        public async Task DeleteWorldCupCountryAsync(Tenant tenant, int code, CancellationToken cancellationToken)
+        {
+            var dialect = SapSqlDialect.For(tenant);
+            var sql = $@"
+                DELETE FROM {dialect.Table("@PAISES_MUNDIAL")}
+                WHERE {dialect.Identifier("Code")} = {dialect.Parameter(0)}";
+
+            await ExecuteSaveAsync(tenant, sql, command => AddParameter(command, dialect.Parameter(0), code), cancellationToken);
+        }
+
         private async Task<IReadOnlyList<CupMatch>> QueryMatchesAsync(Tenant tenant, string sql, Action<DbCommand>? configure, CancellationToken cancellationToken)
         {
             await using var connection = _connectionFactory.CreateConnection(tenant);

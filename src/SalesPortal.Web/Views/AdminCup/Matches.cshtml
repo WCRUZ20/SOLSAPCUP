@@ -7,7 +7,7 @@
     <div>
         <span class="eyebrow">Administración de copa</span>
         <h2>Partidos</h2>
-        <p>Ubica un partido y registra marcador u observación sin perder contexto del encuentro.</p>
+        <p>Agrega, modifica o elimina partidos manteniendo la tabla visible.</p>
     </div>
     <div class="admin-module-actions">
         <a class="btn btn-secondary" asp-action="Players">Jugadores</a>
@@ -47,7 +47,7 @@
         <div class="admin-panel-heading admin-editor-heading">
             <div>
                 <span class="eyebrow">Paso 2</span>
-                <h3 id="match-editor-title">Editar partido</h3>
+                <h3 id="match-editor-title">Agregar / editar partido</h3>
             </div>
             <span class="admin-status-pill" data-admin-editor-status>Sin selección</span>
         </div>
@@ -55,7 +55,7 @@
             <span>Partido</span>
             <strong>Ningún registro seleccionado</strong>
         </div>
-        <p class="admin-selection-help" data-admin-editor-help>Selecciona una fila para habilitar marcador y observación.</p>
+        <p class="admin-selection-help" data-admin-editor-help>Selecciona una fila o crea un partido nuevo.</p>
         <form asp-action="SaveMatch" method="post" class="cup-form admin-compact-form" data-admin-editor-form>
             @Html.AntiForgeryToken()
             <div class="form-field is-readonly">
@@ -95,9 +95,15 @@
                 <textarea asp-for="Match.Observation" class="cup-input cup-comments-input" placeholder="Nota breve" disabled data-admin-field="observation"></textarea>
             </div>
             <div class="admin-form-actions">
+                <button type="button" class="btn btn-light" data-admin-editor-new>Nuevo</button>
                 <button type="button" class="btn btn-light" data-admin-editor-clear disabled>Limpiar</button>
                 <button type="submit" class="btn btn-primary" disabled data-admin-editor-submit>Guardar</button>
             </div>
+        </form>
+        <form asp-action="DeleteMatch" method="post" class="admin-delete-form" data-admin-delete-form onsubmit="return confirm('¿Eliminar este partido?');">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="code" data-admin-delete-key />
+            <button type="submit" class="btn btn-red" data-admin-delete-submit disabled>Eliminar partido</button>
         </form>
     </aside>
 </section>

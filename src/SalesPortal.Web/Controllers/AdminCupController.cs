@@ -118,6 +118,58 @@ public sealed class AdminCupController : Controller
         return RedirectToAction(nameof(Matches));
     }
 
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteCompetitor(string code, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            TempData["Error"] = "Seleccione un jugador para eliminar.";
+            return RedirectToAction(nameof(Players));
+        }
+
+        var tenant = _tenantResolver.ResolveByHost(HttpContext.Request.Host.Value);
+        await _cupRepository.DeleteCompetitorAsync(tenant, code.Trim(), cancellationToken);
+
+        TempData["Success"] = "Jugador eliminado correctamente.";
+        return RedirectToAction(nameof(Players));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteMatch(string code, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            TempData["Error"] = "Seleccione un partido para eliminar.";
+            return RedirectToAction(nameof(Matches));
+        }
+
+        var tenant = _tenantResolver.ResolveByHost(HttpContext.Request.Host.Value);
+        await _cupRepository.DeleteMatchAsync(tenant, code.Trim(), cancellationToken);
+
+        TempData["Success"] = "Partido eliminado correctamente.";
+        return RedirectToAction(nameof(Matches));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteCountry(int? code, CancellationToken cancellationToken)
+    {
+        if (!code.HasValue)
+        {
+            TempData["Error"] = "Seleccione un país para eliminar.";
+            return RedirectToAction(nameof(Countries));
+        }
+
+        var tenant = _tenantResolver.ResolveByHost(HttpContext.Request.Host.Value);
+        await _cupRepository.DeleteWorldCupCountryAsync(tenant, code.Value, cancellationToken);
+
+        TempData["Success"] = "País eliminado correctamente.";
+        return RedirectToAction(nameof(Countries));
+    }
+
     private async Task<AdminCupPlayersViewModel> BuildPlayersModelAsync(CancellationToken cancellationToken)
     {
         var tenant = _tenantResolver.ResolveByHost(HttpContext.Request.Host.Value);
