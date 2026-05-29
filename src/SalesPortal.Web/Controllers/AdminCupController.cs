@@ -9,6 +9,8 @@ namespace SalesPortal.Web.Controllers;
 [Authorize(Policy = "Admin")]
 public sealed class AdminCupController : Controller
 {
+    private static readonly DateTime MatchScheduleStartDate = new(2026, 6, 12);
+
     private readonly ITenantResolver _tenantResolver;
     private readonly ICupRepository _cupRepository;
 
@@ -146,7 +148,7 @@ public sealed class AdminCupController : Controller
         }
 
         var existingMatches = await _cupRepository.GetMatchesAsync(tenant, cancellationToken);
-        var schedule = BuildRoundRobinSchedule(activeCompetitors, DateTime.Today);
+        var schedule = BuildRoundRobinSchedule(activeCompetitors, MatchScheduleStartDate);
         var usedCodes = existingMatches
             .Select(match => match.Code)
             .Where(code => !string.IsNullOrWhiteSpace(code))
