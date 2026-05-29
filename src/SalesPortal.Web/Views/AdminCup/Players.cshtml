@@ -119,7 +119,10 @@
             </div>
             <div class="form-field form-field-wide">
                 <label asp-for="Competitor.Status">Estado</label>
-                <input asp-for="Competitor.Status" class="cup-input" placeholder="Activo / clasificado / eliminado" disabled data-admin-field="status" />
+                <select asp-for="Competitor.Status" class="cup-input" disabled data-admin-field="status" data-default-value="Activo">
+                    <option value="Activo">Activo</option>
+                    <option value="Eliminado">Eliminado</option>
+                </select>
             </div>
             <div class="admin-form-actions">
                 <button type="button" class="btn btn-light" data-admin-editor-new>Nuevo</button>

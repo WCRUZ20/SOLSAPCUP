@@ -59,7 +59,7 @@
 
             function clearForm() {
                 fields.forEach(function (field) {
-                    field.value = '';
+                    field.value = field.dataset.defaultValue || '';
                 });
             }
 
