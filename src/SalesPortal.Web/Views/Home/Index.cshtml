@@ -105,12 +105,11 @@
                     {
                         foreach (var row in Model.Standings)
                         {
-                            @{
-                                var rowFlagUrl = string.IsNullOrWhiteSpace(row.CountryFlagFileName)
-                                    ? string.Empty
-                                    : Url.Content($"~/img/banderas/{System.Uri.EscapeDataString(row.CountryCode)}.png");
-                                var rowCountryLabel = string.IsNullOrWhiteSpace(row.CountryName) ? row.Team : row.CountryName;
-                            }
+                            var rowFlagUrl = string.IsNullOrWhiteSpace(row.CountryFlagFileName)
+                                ? string.Empty
+                                : Url.Content($"~/img/banderas/{System.Uri.EscapeDataString(row.CountryCode)}.png");
+                            var rowCountryLabel = string.IsNullOrWhiteSpace(row.CountryName) ? row.Team : row.CountryName;
+
                             <tr class="@(row.IsCurrentUser ? "current-player-row" : string.Empty)">
                                 <td class="text-strong">@(row.Position == 0 ? "--" : row.Position.ToString("0"))</td>
                                 <td>@row.Name</td>

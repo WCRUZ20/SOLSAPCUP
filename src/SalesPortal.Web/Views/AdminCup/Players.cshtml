@@ -36,12 +36,11 @@
                 <tbody>
                 @foreach (var competitor in Model.Competitors)
                 {
-                    @{
-                        var competitorFlagUrl = string.IsNullOrWhiteSpace(competitor.CountryFlagFileName)
-                            ? string.Empty
-                            : Url.Content($"~/img/banderas/{System.Uri.EscapeDataString(competitor.CountryCode)}.png");
-                        var competitorCountryLabel = string.IsNullOrWhiteSpace(competitor.CountryName) ? competitor.Team : competitor.CountryName;
-                    }
+                    var competitorFlagUrl = string.IsNullOrWhiteSpace(competitor.CountryFlagFileName)
+                        ? string.Empty
+                        : Url.Content($"~/img/banderas/{System.Uri.EscapeDataString(competitor.CountryCode)}.png");
+                    var competitorCountryLabel = string.IsNullOrWhiteSpace(competitor.CountryName) ? competitor.Team : competitor.CountryName;
+
                     <tr class="admin-selectable-row" tabindex="0" data-summary-title="@competitor.Name" data-summary-detail="@competitor.Code · @competitor.Team" data-field-code="@competitor.Code" data-field-name="@competitor.Name" data-field-player-id="@competitor.PlayerId" data-field-team="@competitor.Team" data-field-matches="@competitor.Matches.ToString("0")" data-field-points="@competitor.Points.ToString("0")" data-field-goal-difference="@competitor.GoalDifference.ToString("0")" data-field-table-position="@competitor.TablePosition.ToString("0")" data-field-status="@competitor.Status">
                         <td class="text-strong">@competitor.Code</td>
                         <td>
