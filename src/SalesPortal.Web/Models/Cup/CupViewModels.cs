@@ -72,6 +72,7 @@ namespace SalesPortal.Web.Models.Cup
         public int? Code { get; set; }
         [Required] public string CountryCode { get; set; } = string.Empty;
         [Required] public string CountryName { get; set; } = string.Empty;
+        public string CountryFlagFileName => string.IsNullOrWhiteSpace(CountryCode) ? string.Empty : $"{CountryCode}.png";
         public string Name { get; set; } = string.Empty;
     }
 }

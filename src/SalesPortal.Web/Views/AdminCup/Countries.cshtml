@@ -27,16 +27,37 @@
         <div class="admin-table-toolbar admin-table-toolbar-compact">
             <label class="admin-search-field">
                 <span>Buscar país</span>
-                <input type="search" placeholder="ID, código país, nombre o nombre SAP" data-admin-grid-search />
+                <input type="search" placeholder="ID, código país, nombre o bandera" data-admin-grid-search />
             </label>
         </div>
         <div class="table-wrapper admin-table admin-table-compact" data-admin-editor-grid>
             <table>
-                <thead><tr><th>ID</th><th>Código país</th><th>Nombre país</th><th>Nombre SAP</th></tr></thead>
+                <thead><tr><th>ID</th><th>Código país</th><th>Nombre país</th><th>Bandera</th></tr></thead>
                 <tbody>
                 @foreach (var country in Model.Countries)
                 {
-                    <tr class="admin-selectable-row" tabindex="0" data-summary-title="@country.CountryName" data-summary-detail="@country.CountryCode" data-field-code="@country.Code" data-field-country-code="@country.CountryCode" data-field-country-name="@country.CountryName" data-field-name="@country.Name"><td class="text-strong">@country.Code</td><td><span class="admin-table-chip">@country.CountryCode</span></td><td>@country.CountryName</td><td>@country.Name</td></tr>
+                    var countryFlagUrl = string.IsNullOrWhiteSpace(country.CountryFlagFileName)
+                        ? string.Empty
+                        : Url.Content($"~/img/banderas/{System.Uri.EscapeDataString(country.CountryCode)}.png");
+
+                    <tr class="admin-selectable-row" tabindex="0" data-summary-title="@country.CountryName" data-summary-detail="@country.CountryCode" data-field-code="@country.Code" data-field-country-code="@country.CountryCode" data-field-country-name="@country.CountryName" data-field-name="@country.Name">
+                        <td class="text-strong">@country.Code</td>
+                        <td><span class="admin-table-chip">@country.CountryCode</span></td>
+                        <td>@country.CountryName</td>
+                        <td>
+                            <span class="table-country-flag-cell">
+                                @if (!string.IsNullOrWhiteSpace(countryFlagUrl))
+                                {
+                                    <img class="table-country-flag" src="@countryFlagUrl" alt="Bandera de @country.CountryName" title="@country.CountryName" />
+                                }
+                                else
+                                {
+                                    <span class="table-country-flag-placeholder" title="Sin bandera">--</span>
+                                }
+                                <span class="visually-hidden">@country.CountryName</span>
+                            </span>
+                        </td>
+                    </tr>
                 }
                 </tbody>
             </table>
