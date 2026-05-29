@@ -174,7 +174,7 @@ namespace SalesPortal.Infrastructure.Persistence.Sap
                     [SapUserFields.EmailWeb] = registration.Email,
                     [SapUserFields.PwdWeb] = registration.PasswordWeb,
                     [SapUserFields.ChangePwd] = "Y",
-                    [SapUserFields.Role] = "P"
+                    //[SapUserFields.Role] = "P"
                 };
 
                 if (!string.IsNullOrWhiteSpace(registration.Dealer))

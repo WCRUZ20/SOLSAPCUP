@@ -160,7 +160,7 @@ namespace SalesPortal.Application.Auth.Services
                         PasswordWeb = defaultPassword,
                         Dealer = "Y",
                         MustChangePassword = "Y",
-                        Role = "P"
+                        //Role = "P"
                     },
                     cancellationToken);
             }
