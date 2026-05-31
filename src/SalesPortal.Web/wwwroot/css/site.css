@@ -50,15 +50,15 @@ body {
 
 .brand {
     align-items: center;
-    background: var(--sidebar-surface);
+    /*background: var(--sidebar-surface);
     border: 1px solid var(--sidebar-surface-strong);
-    border-radius: 20px;
+    border-radius: 20px;*/
     display: flex;
     justify-content: center;
     margin-bottom: 28px;
     padding: 12px;
-    text-decoration: none;
-    backdrop-filter: blur(8px);
+    /*text-decoration: none;
+    backdrop-filter: blur(8px);*/
 }
 
 .brand-logo {
