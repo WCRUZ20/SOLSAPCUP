@@ -205,35 +205,38 @@
     </section>
 </div>
 
-<section class="analytics-card goals-card">
-    <div class="section-title compact-title">
-        <div>
-            <span class="eyebrow">Ataque</span>
-            <h2>Goles a favor</h2>
+<div class="analytics-grid dashboard-lower-analytics">
+    <div class="dashboard-lower-spacer" aria-hidden="true"></div>
+    <section class="analytics-card goals-card">
+        <div class="section-title compact-title">
+            <div>
+                <span class="eyebrow">Ataque</span>
+                <h2>Goles a favor</h2>
+            </div>
         </div>
-    </div>
-    @if (Model.GoalChart.Count == 0)
-    {
-        <div class="dashboard-empty-state">No hay resultados para graficar.</div>
-    }
-    else
-    {
-        <div class="status-list">
-            @foreach (var row in Model.GoalChart)
-            {
-                <div class="status-row">
-                    <div class="status-row-header">
-                        <strong>@row.Team</strong>
-                        <span>@row.GoalsFor.ToString("0") goles</span>
+        @if (Model.GoalChart.Count == 0)
+        {
+            <div class="dashboard-empty-state">No hay resultados para graficar.</div>
+        }
+        else
+        {
+            <div class="status-list">
+                @foreach (var row in Model.GoalChart)
+                {
+                    <div class="status-row">
+                        <div class="status-row-header">
+                            <strong>@row.Team</strong>
+                            <span>@row.GoalsFor.ToString("0") goles</span>
+                        </div>
+                        <div class="progress-track" aria-hidden="true">
+                            <span style="width: @row.Percentage%"></span>
+                        </div>
                     </div>
-                    <div class="progress-track" aria-hidden="true">
-                        <span style="width: @row.Percentage%"></span>
-                    </div>
-                </div>
-            }
-        </div>
-    }
-</section>
+                }
+            </div>
+        }
+    </section>
+</div>
 
 @section Scripts {
     @if (showAssignmentPopup)

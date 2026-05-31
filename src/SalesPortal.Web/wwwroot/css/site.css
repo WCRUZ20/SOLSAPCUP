@@ -927,8 +927,12 @@ td {
     text-align: center;
 }
 
-.goals-card {
+.dashboard-lower-analytics {
     margin-top: 18px;
+}
+
+.dashboard-lower-spacer {
+    min-height: 1px;
 }
 
 .today-match-list {
@@ -1037,6 +1041,12 @@ td {
     min-width: 74px;
     padding: 12px 14px;
     text-align: center;
+}
+
+@media (max-width: 960px) {
+    .dashboard-lower-spacer {
+        display: none;
+    }
 }
 
 @media (max-width: 520px) {
