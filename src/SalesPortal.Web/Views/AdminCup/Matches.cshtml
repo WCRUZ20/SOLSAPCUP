@@ -38,7 +38,7 @@
                 <tbody>
                 @foreach (var match in Model.Matches)
                 {
-                    <tr class="admin-selectable-row" tabindex="0" data-summary-title="@match.Name" data-summary-detail="@match.Player1 vs @match.Player2" data-field-code="@match.Code" data-field-name="@match.Name" data-field-match-date="@(match.MatchDate?.ToString("dd/MM/yyyy") ?? string.Empty)" data-field-match-time="@(match.MatchTime?.ToString("0000") ?? string.Empty)" data-field-player1="@match.Player1" data-field-player2="@match.Player2" data-field-goals-player1="@(match.GoalsPlayer1?.ToString("0") ?? string.Empty)" data-field-goals-player2="@(match.GoalsPlayer2?.ToString("0") ?? string.Empty)" data-field-observation="@match.Observation"><td class="text-strong">@match.Code</td><td>@match.Name</td><td>@(match.MatchDate?.ToString("dd/MM/yyyy") ?? "--")</td><td>@(match.MatchTime?.ToString("0000") ?? "--")</td><td>@match.Player1</td><td>@match.Player2</td><td><span class="admin-table-chip">@(match.GoalsPlayer1.HasValue || match.GoalsPlayer2.HasValue ? $"{match.GoalsPlayer1?.ToString("0") ?? "-"} - {match.GoalsPlayer2?.ToString("0") ?? "-"}" : "Pendiente")</span></td><td>@match.Observation</td></tr>
+                    <tr class="admin-selectable-row" tabindex="0" data-summary-title="@match.Name" data-summary-detail="@match.Player1 vs @match.Player2" data-field-code="@match.Code" data-field-name="@match.Name" data-field-match-date="@(match.MatchDate?.ToString("yyyy-MM-dd") ?? string.Empty)" data-field-match-time="@(match.MatchTime?.ToString("0000") ?? string.Empty)" data-field-player1="@match.Player1" data-field-player2="@match.Player2" data-field-goals-player1="@(match.GoalsPlayer1?.ToString("0") ?? string.Empty)" data-field-goals-player2="@(match.GoalsPlayer2?.ToString("0") ?? string.Empty)" data-field-observation="@match.Observation"><td class="text-strong">@match.Code</td><td>@match.Name</td><td>@(match.MatchDate?.ToString("dd/MM/yyyy") ?? "--")</td><td>@(match.MatchTime?.ToString("0000") ?? "--")</td><td>@match.Player1</td><td>@match.Player2</td><td><span class="admin-table-chip">@(match.GoalsPlayer1.HasValue || match.GoalsPlayer2.HasValue ? $"{match.GoalsPlayer1?.ToString("0") ?? "-"} - {match.GoalsPlayer2?.ToString("0") ?? "-"}" : "Pendiente")</span></td><td>@match.Observation</td></tr>
                 }
                 </tbody>
             </table>
@@ -69,8 +69,8 @@
                 <input asp-for="Match.Name" class="cup-input" placeholder="Nombre" disabled data-admin-field="name" data-locked="true" />
             </div>
             <div class="form-field is-readonly">
-                <label asp-for="Match.MatchDateText">Fecha</label>
-                <input asp-for="Match.MatchDateText" type="text" class="cup-input" placeholder="día/mes/año" inputmode="numeric" pattern="[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}" title="Ingrese la fecha como día/mes/año" disabled data-admin-field="matchDate" data-locked="true" />
+                <label asp-for="Match.MatchDate">Fecha</label>
+                <input asp-for="Match.MatchDate" type="date" class="cup-input" lang="es" disabled data-admin-field="matchDate" data-locked="true" data-admin-date-input />
             </div>
             <div class="form-field is-readonly">
                 <label asp-for="Match.MatchTime">Hora</label>

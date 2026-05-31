@@ -104,12 +104,6 @@ public sealed class AdminCupController : Controller
             return RedirectToAction(nameof(Matches));
         }
 
-        if (!string.IsNullOrWhiteSpace(model.Match.MatchDateText) && !model.Match.MatchDate.HasValue)
-        {
-            TempData["Error"] = "Ingrese la fecha del partido con formato día/mes/año.";
-            return RedirectToAction(nameof(Matches));
-        }
-
         var tenant = _tenantResolver.ResolveByHost(HttpContext.Request.Host.Value);
         await _cupRepository.SaveMatchAsync(tenant, new CupMatch
         {

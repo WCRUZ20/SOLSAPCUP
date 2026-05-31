@@ -49,6 +49,97 @@
         return 'field' + fieldName.charAt(0).toUpperCase() + fieldName.slice(1);
     }
 
+    function resetDateInputTypingState(field) {
+        if (!field || !field.matches('[data-admin-date-input]')) {
+            return;
+        }
+
+        delete field.dataset.dateDigits;
+        field.setCustomValidity('');
+    }
+
+    function buildIsoDateFromDayMonthYearDigits(digits) {
+        if (!/^\d{8}$/.test(digits)) {
+            return '';
+        }
+
+        var day = Number(digits.slice(0, 2));
+        var month = Number(digits.slice(2, 4));
+        var year = Number(digits.slice(4, 8));
+        var date = new Date(year, month - 1, day);
+
+        if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+            return '';
+        }
+
+        return [
+            String(year).padStart(4, '0'),
+            String(month).padStart(2, '0'),
+            String(day).padStart(2, '0')
+        ].join('-');
+    }
+
+    function setDateInputFromDigits(field, digits) {
+        field.dataset.dateDigits = digits;
+
+        if (digits.length < 8) {
+            field.setCustomValidity('');
+            return;
+        }
+
+        var isoDate = buildIsoDateFromDayMonthYearDigits(digits);
+
+        if (!isoDate) {
+            field.setCustomValidity('Ingrese una fecha válida en formato día/mes/año.');
+            field.reportValidity();
+            return;
+        }
+
+        field.value = isoDate;
+        field.setCustomValidity('');
+        field.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    function initializeAdminDateInputs() {
+        document.querySelectorAll('[data-admin-date-input]').forEach(function (field) {
+            field.addEventListener('keydown', function (event) {
+                if (event.ctrlKey || event.metaKey || event.altKey) {
+                    return;
+                }
+
+                if (/^\d$/.test(event.key)) {
+                    event.preventDefault();
+                    var currentDigits = field.dataset.dateDigits || '';
+                    var nextDigits = (currentDigits.length >= 8 ? '' : currentDigits) + event.key;
+                    setDateInputFromDigits(field, nextDigits);
+                    return;
+                }
+
+                if (event.key === 'Backspace' && field.dataset.dateDigits) {
+                    event.preventDefault();
+                    setDateInputFromDigits(field, field.dataset.dateDigits.slice(0, -1));
+                }
+            });
+
+            field.addEventListener('paste', function (event) {
+                var clipboardData = event.clipboardData || window.clipboardData;
+                var pastedText = clipboardData ? clipboardData.getData('text') : '';
+                var digits = pastedText.replace(/\D/g, '').slice(0, 8);
+
+                if (digits.length === 0) {
+                    return;
+                }
+
+                event.preventDefault();
+                setDateInputFromDigits(field, digits);
+            });
+
+            field.addEventListener('change', function () {
+                resetDateInputTypingState(field);
+            });
+        });
+    }
+
     function initializeAdminGridEditors() {
         document.querySelectorAll('[data-admin-editor-form]').forEach(function (form) {
             var scope = form.closest('[data-admin-editor-scope]') || document;
@@ -103,6 +194,7 @@
             function clearForm() {
                 fields.forEach(function (field) {
                     field.value = field.dataset.defaultValue || '';
+                    resetDateInputTypingState(field);
                 });
             }
 
@@ -196,6 +288,7 @@
                 fields.forEach(function (field) {
                     var value = row.dataset[getDataFieldName(field.dataset.adminField)];
                     field.value = value || '';
+                    resetDateInputTypingState(field);
                 });
 
                 setFormEnabled(true, false);
@@ -266,10 +359,12 @@
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function () {
             initializeSidebarAccordion();
+            initializeAdminDateInputs();
             initializeAdminGridEditors();
         });
     } else {
         initializeSidebarAccordion();
+        initializeAdminDateInputs();
         initializeAdminGridEditors();
     }
 })();
