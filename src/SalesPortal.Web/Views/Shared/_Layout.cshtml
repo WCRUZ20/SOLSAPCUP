@@ -27,12 +27,20 @@
                 <a class="menu-item @(currentController == "Matches" ? "active" : string.Empty)" asp-controller="Matches" asp-action="Index">Mis partidos</a>
                 @if (User.IsInRole("Admin"))
                 {
-                    <div class="menu-module">
-                        <a class="menu-item @(currentController == "AdminCup" ? "active" : string.Empty)" asp-controller="AdminCup" asp-action="Index">Administración</a>
-                        <div class="submenu" aria-label="Submódulos de administración">
-                            <a class="submenu-item @(currentController == "AdminCup" && currentAction == "Players" ? "active" : string.Empty)" asp-controller="AdminCup" asp-action="Players">Jugadores</a>
-                            <a class="submenu-item @(currentController == "AdminCup" && currentAction == "Matches" ? "active" : string.Empty)" asp-controller="AdminCup" asp-action="Matches">Partidos</a>
-                            <a class="submenu-item @(currentController == "AdminCup" && currentAction == "Countries" ? "active" : string.Empty)" asp-controller="AdminCup" asp-action="Countries">Países</a>
+                    var isAdminCupActive = currentController == "AdminCup";
+                    <div class="menu-module has-submenu @(isAdminCupActive ? "is-expanded" : string.Empty)" data-sidebar-module>
+                        <a class="menu-item menu-module-toggle @(isAdminCupActive ? "active" : string.Empty)"
+                           asp-controller="AdminCup"
+                           asp-action="Index"
+                           aria-expanded="@(isAdminCupActive.ToString().ToLowerInvariant())"
+                           data-sidebar-module-toggle>
+                            <span>Administración</span>
+                            <span class="menu-caret" aria-hidden="true"></span>
+                        </a>
+                        <div class="submenu @(isAdminCupActive ? string.Empty : "is-collapsed")" aria-label="Submódulos de administración" aria-hidden="@((!isAdminCupActive).ToString().ToLowerInvariant())" data-sidebar-submenu>
+                            <a class="submenu-item @(isAdminCupActive && currentAction == "Players" ? "active" : string.Empty)" asp-controller="AdminCup" asp-action="Players" tabindex="@(isAdminCupActive ? null : "-1")">Jugadores</a>
+                            <a class="submenu-item @(isAdminCupActive && currentAction == "Matches" ? "active" : string.Empty)" asp-controller="AdminCup" asp-action="Matches" tabindex="@(isAdminCupActive ? null : "-1")">Partidos</a>
+                            <a class="submenu-item @(isAdminCupActive && currentAction == "Countries" ? "active" : string.Empty)" asp-controller="AdminCup" asp-action="Countries" tabindex="@(isAdminCupActive ? null : "-1")">Países</a>
                         </div>
                     </div>
                 }

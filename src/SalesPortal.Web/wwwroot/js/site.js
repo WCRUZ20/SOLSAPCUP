@@ -2,6 +2,51 @@
 // for details on configuring this project to bundle and minify static web assets.
 
 (function () {
+    function initializeSidebarAccordion() {
+        var modules = Array.prototype.slice.call(document.querySelectorAll('[data-sidebar-module]'));
+
+        function setExpanded(module, isExpanded) {
+            var toggle = module.querySelector('[data-sidebar-module-toggle]');
+            var submenu = module.querySelector('[data-sidebar-submenu]');
+
+            module.classList.toggle('is-expanded', isExpanded);
+
+            if (toggle) {
+                toggle.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+            }
+
+            if (submenu) {
+                submenu.classList.toggle('is-collapsed', !isExpanded);
+                submenu.setAttribute('aria-hidden', isExpanded ? 'false' : 'true');
+                submenu.querySelectorAll('a').forEach(function (item) {
+                    if (isExpanded) {
+                        item.removeAttribute('tabindex');
+                    } else {
+                        item.setAttribute('tabindex', '-1');
+                    }
+                });
+            }
+        }
+
+        modules.forEach(function (module) {
+            var toggle = module.querySelector('[data-sidebar-module-toggle]');
+
+            if (!toggle) {
+                return;
+            }
+
+            toggle.addEventListener('click', function () {
+                modules.forEach(function (otherModule) {
+                    if (otherModule !== module) {
+                        setExpanded(otherModule, false);
+                    }
+                });
+
+                setExpanded(module, true);
+            });
+        });
+    }
+
     function getDataFieldName(fieldName) {
         return 'field' + fieldName.charAt(0).toUpperCase() + fieldName.slice(1);
     }
@@ -221,8 +266,12 @@
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializeAdminGridEditors);
+        document.addEventListener('DOMContentLoaded', function () {
+            initializeSidebarAccordion();
+            initializeAdminGridEditors();
+        });
     } else {
+        initializeSidebarAccordion();
         initializeAdminGridEditors();
     }
 })();

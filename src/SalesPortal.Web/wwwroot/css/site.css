@@ -10,6 +10,9 @@
     --border: #e5e5e5;
     --shadow: 0 12px 34px rgba(0, 0, 0, 0.06);
     --accent-shadow: 0 10px 22px rgba(229, 95, 0, 0.24);
+    --sidebar-surface: rgba(255, 255, 255, 0.22);
+    --sidebar-surface-strong: rgba(255, 255, 255, 0.34);
+    --sidebar-line: rgba(17, 17, 17, 0.14);
 }
 
 * {
@@ -31,21 +34,31 @@ body {
 .app-shell {
     min-height: 100vh;
     display: grid;
-    grid-template-columns: 280px minmax(0, 1fr);
+    grid-template-columns: 260px minmax(0, 1fr);
 }
 
 .sidebar {
-    background: linear-gradient(135deg, var(--orange), var(--orange-soft));
+    background:
+        radial-gradient(circle at top left, rgba(255, 255, 255, 0.28), transparent 32%),
+        linear-gradient(160deg, var(--orange), var(--orange-soft));
     color: var(--black);
-    padding: 26px;
+    padding: 22px 18px;
     display: flex;
     flex-direction: column;
+    box-shadow: 14px 0 34px rgba(17, 17, 17, 0.08);
 }
 
 .brand {
-    display: block;
-    margin-bottom: 38px;
+    align-items: center;
+    background: var(--sidebar-surface);
+    border: 1px solid var(--sidebar-surface-strong);
+    border-radius: 20px;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 28px;
+    padding: 12px;
     text-decoration: none;
+    backdrop-filter: blur(8px);
 }
 
 .brand-logo {
@@ -60,19 +73,15 @@ body {
 }
 
 .brand-logo-sb {
-    width: 100%;
-    max-width: 220px;
+    width: min(100%, 142px);
     height: auto;
     display: block;
-    /*background: var(--white);
-    border-radius: 18px;
-    padding: 14px 18px;*/
-    filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.28));
+    filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.22));
 }
 
 .menu {
     display: grid;
-    gap: 10px;
+    gap: 8px;
 }
 
 .menu-module {
@@ -83,29 +92,49 @@ body {
 .submenu {
     display: grid;
     gap: 6px;
-    padding-left: 18px;
+    margin: 4px 0 2px;
+    max-height: 280px;
+    opacity: 1;
+    overflow: hidden;
+    padding: 8px 0 6px 14px;
+    transition: max-height 0.24s ease, opacity 0.2s ease, padding 0.24s ease;
+}
+
+.submenu.is-collapsed {
+    display: grid;
+    max-height: 0;
+    opacity: 0;
+    pointer-events: none;
+    padding-bottom: 0;
+    padding-top: 0;
 }
 
 .submenu-item {
-    border-left: 3px solid rgba(17, 17, 17, 0.22);
-    color: var(--black);
+    border-left: 2px solid var(--sidebar-line);
+    border-radius: 0 12px 12px 0;
+    color: rgba(17, 17, 17, 0.78);
     font-size: 14px;
     font-weight: 700;
     padding: 10px 12px;
     text-decoration: none;
-    transition: 0.2s;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
 .submenu-item:hover,
 .submenu-item.active {
+    background: rgba(255, 255, 255, 0.24);
     border-left-color: var(--black);
+    color: var(--black);
     font-weight: 900;
+    transform: translateX(2px);
 }
 
 .sidebar-session {
-    border-top: 1px solid rgba(17, 17, 17, 0.16);
+    background: var(--sidebar-surface);
+    border: 1px solid var(--sidebar-surface-strong);
+    border-radius: 18px;
     margin-top: auto;
-    padding-top: 22px;
+    padding: 16px;
 }
 
     .sidebar-session p {
@@ -119,24 +148,46 @@ body {
 }
 
 .menu-item {
-    color: var(--black);
+    align-items: center;
+    color: rgba(17, 17, 17, 0.86);
+    display: flex;
+    font-weight: 750;
+    justify-content: space-between;
     text-decoration: none;
-    padding: 14px 16px;
-    border-radius: 14px;
-    transition: 0.2s;
+    padding: 13px 14px;
+    border: 1px solid transparent;
+    border-radius: 16px;
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
     .menu-item:hover,
     .menu-item.active {
-        background: var(--black);
-        border-radius: 0;
+        background: rgba(17, 17, 17, 0.9);
+        border-color: rgba(255, 255, 255, 0.24);
+        box-shadow: 0 12px 22px rgba(17, 17, 17, 0.18);
         color: var(--white);
-        font-weight: 800;
-        margin-left: -26px;
-        margin-right: -26px;
-        padding-left: 42px;
-        padding-right: 42px;
+        font-weight: 900;
+        transform: translateX(2px);
     }
+
+.menu-module-toggle {
+    width: 100%;
+}
+
+.menu-caret {
+    border-bottom: 2px solid currentColor;
+    border-right: 2px solid currentColor;
+    flex: 0 0 auto;
+    height: 8px;
+    margin-left: 12px;
+    transform: rotate(45deg);
+    transition: transform 0.2s ease;
+    width: 8px;
+}
+
+.menu-module.is-expanded .menu-caret {
+    transform: rotate(225deg);
+}
 
 .main-content {
     min-width: 0;
