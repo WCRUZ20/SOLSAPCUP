@@ -74,7 +74,7 @@ public sealed class HomeController : Controller
             GoalsFor = currentStatistics?.GoalsFor ?? 0,
             GoalsAgainst = currentStatistics?.GoalsAgainst ?? 0,
             Standings = standingRows,
-            GoalChart = standingRows.Take(8).Select(row => new GoalChartRowViewModel
+            GoalChart = standingRows.Select(row => new GoalChartRowViewModel
             {
                 Team = row.Team,
                 GoalsFor = row.GoalsFor,
