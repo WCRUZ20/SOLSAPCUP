@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 
 namespace SalesPortal.Web.Models.Cup
 {
@@ -56,9 +57,31 @@ namespace SalesPortal.Web.Models.Cup
 
     public sealed class MatchFormViewModel
     {
+        private const string MatchDateDisplayFormat = "dd/MM/yyyy";
+        private static readonly string[] MatchDateInputFormats = { "dd/MM/yyyy", "d/M/yyyy" };
+        private string _matchDateText = string.Empty;
+
         [Required] public string Code { get; set; } = string.Empty;
         [Required] public string Name { get; set; } = string.Empty;
         public DateTime? MatchDate { get; set; }
+        public string MatchDateText
+        {
+            get => !string.IsNullOrWhiteSpace(_matchDateText)
+                ? _matchDateText
+                : MatchDate?.ToString(MatchDateDisplayFormat, CultureInfo.InvariantCulture) ?? string.Empty;
+            set
+            {
+                _matchDateText = value ?? string.Empty;
+                MatchDate = DateTime.TryParseExact(
+                    _matchDateText,
+                    MatchDateInputFormats,
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.None,
+                    out var matchDate)
+                        ? matchDate
+                        : null;
+            }
+        }
         public short? MatchTime { get; set; }
         public string Player1 { get; set; } = string.Empty;
         public string Player2 { get; set; } = string.Empty;

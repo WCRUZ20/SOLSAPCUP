@@ -10,6 +10,8 @@ namespace SalesPortal.Web.Controllers;
 public sealed class AdminCupController : Controller
 {
     private static readonly DateTime MatchScheduleStartDate = new(2026, 6, 12);
+    private static readonly TimeSpan MatchScheduleStartTime = TimeSpan.FromHours(17);
+    private static readonly TimeSpan MatchScheduleInterval = TimeSpan.FromMinutes(10);
 
     private readonly ITenantResolver _tenantResolver;
     private readonly ICupRepository _cupRepository;
@@ -102,6 +104,12 @@ public sealed class AdminCupController : Controller
             return RedirectToAction(nameof(Matches));
         }
 
+        if (!string.IsNullOrWhiteSpace(model.Match.MatchDateText) && !model.Match.MatchDate.HasValue)
+        {
+            TempData["Error"] = "Ingrese la fecha del partido con formato día/mes/año.";
+            return RedirectToAction(nameof(Matches));
+        }
+
         var tenant = _tenantResolver.ResolveByHost(HttpContext.Request.Host.Value);
         await _cupRepository.SaveMatchAsync(tenant, new CupMatch
         {
@@ -179,17 +187,37 @@ public sealed class AdminCupController : Controller
                 continue;
             }
 
-            if (!IsPendingMatch(existingMatch) || existingMatch.MatchDate.HasValue)
+            if (!IsPendingMatch(existingMatch))
                 continue;
 
-            existingMatch.MatchDate = scheduledMatch.MatchDate;
-            existingMatch.MatchTime = scheduledMatch.MatchTime;
+            var shouldUpdateMatch = false;
+
+            if (!existingMatch.MatchDate.HasValue)
+            {
+                existingMatch.MatchDate = scheduledMatch.MatchDate;
+                shouldUpdateMatch = true;
+            }
+
+            if (!existingMatch.MatchTime.HasValue)
+            {
+                existingMatch.MatchTime = scheduledMatch.MatchTime;
+                shouldUpdateMatch = true;
+            }
 
             if (string.IsNullOrWhiteSpace(existingMatch.Name))
+            {
                 existingMatch.Name = scheduledMatch.Name;
+                shouldUpdateMatch = true;
+            }
 
             if (string.IsNullOrWhiteSpace(existingMatch.Observation))
+            {
                 existingMatch.Observation = scheduledMatch.Observation;
+                shouldUpdateMatch = true;
+            }
+
+            if (!shouldUpdateMatch)
+                continue;
 
             await _cupRepository.SaveMatchAsync(tenant, existingMatch, cancellationToken);
             updatedCount++;
@@ -279,7 +307,7 @@ public sealed class AdminCupController : Controller
                     player1,
                     player2,
                     matchDate,
-                    null,
+                    BuildMatchTime(matchIndex),
                     $"{GetCompetitorDisplayName(player1)} vs {GetCompetitorDisplayName(player2)}",
                     $"Generado automáticamente - Jornada {roundIndex + 1}"));
             }
@@ -290,6 +318,15 @@ public sealed class AdminCupController : Controller
         }
 
         return schedule;
+    }
+
+    private static short BuildMatchTime(int matchIndex)
+    {
+        var totalMinutes = (int)MatchScheduleStartTime.TotalMinutes + ((int)MatchScheduleInterval.TotalMinutes * matchIndex);
+        var hour = (totalMinutes / 60) % 24;
+        var minute = totalMinutes % 60;
+
+        return (short)((hour * 100) + minute);
     }
 
     private static CupMatch? FindExistingMatchForPair(
