@@ -156,6 +156,35 @@ body {
         margin: 0 0 14px;
     }
 
+.sidebar-user {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+    margin-bottom: 14px;
+    min-width: 0;
+}
+
+.sidebar-user-photo {
+    aspect-ratio: 1;
+    background: rgba(255, 255, 255, 0.45);
+    border: 2px solid rgba(255, 255, 255, 0.72);
+    border-radius: 50%;
+    box-shadow: 0 8px 18px rgba(17, 17, 17, 0.16);
+    flex: 0 0 48px;
+    height: 48px;
+    object-fit: cover;
+    width: 48px;
+}
+
+.sidebar-user-code {
+    color: var(--black);
+    font-size: 15px;
+    font-weight: 900;
+    line-height: 1.2;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
 .sidebar-logout {
     width: 100%;
 }

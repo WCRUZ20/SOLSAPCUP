@@ -70,6 +70,7 @@ namespace SalesPortal.Web.Controllers
             new Claim(ClaimTypes.Email, login.EmailWeb ?? string.Empty),
             new Claim(PortalClaimTypes.CardCode, login.CardCode),
             new Claim(PortalClaimTypes.CardName, login.CardName),
+            new Claim(PortalClaimTypes.UserWeb, login.UserWeb),
             new Claim(PortalClaimTypes.TenantCode, login.TenantCode),
             new Claim(PortalClaimTypes.MustChangePassword, login.MustChangePassword ? "Y" : "N"),
             new Claim(PortalClaimTypes.Role, login.Role),

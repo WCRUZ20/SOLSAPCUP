@@ -1,3 +1,5 @@
+@using SalesPortal.Shared.Security
+@using System.Security.Claims
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -47,8 +49,16 @@
                 }
             </nav>
 
+            @{
+                var userWeb = User.FindFirstValue(PortalClaimTypes.UserWeb) ?? User.Identity?.Name ?? string.Empty;
+                var userPhotoUrl = Url.Content($"~/img/users/{Uri.EscapeDataString(userWeb)}.png");
+            }
+
             <div class="sidebar-session">
-                <p>Bienvenido, @User.Identity?.Name</p>
+                <div class="sidebar-user" aria-label="Usuario conectado">
+                    <img class="sidebar-user-photo" src="@userPhotoUrl" alt="Foto de perfil de @userWeb" asp-append-version="true" />
+                    <span class="sidebar-user-code">@userWeb</span>
+                </div>
 
                 <form asp-controller="Auth" asp-action="Logout" method="post">
                     @Html.AntiForgeryToken()
