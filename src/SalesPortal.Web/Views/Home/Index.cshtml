@@ -72,8 +72,88 @@
     </div>
 </div>
 
-<div class="analytics-grid">
-    <section class="analytics-card">
+<section class="analytics-card today-matches-card today-matches-gallery-card" data-today-match-gallery>
+    <div class="section-title compact-title today-matches-gallery-title">
+        <div>
+            <span class="eyebrow">Calendario</span>
+            <h2>Partidos de hoy</h2>
+        </div>
+        @if (Model.TodayMatches.Count > 2)
+        {
+            <div class="today-match-gallery-controls" aria-label="Controles de galería de partidos de hoy">
+                <button class="today-match-gallery-button" type="button" data-gallery-prev aria-label="Ver página anterior de partidos">‹</button>
+                <span class="today-match-gallery-counter" data-gallery-counter>1 / @(((Model.TodayMatches.Count + 1) / 2).ToString("0"))</span>
+                <button class="today-match-gallery-button" type="button" data-gallery-next aria-label="Ver página siguiente de partidos">›</button>
+            </div>
+        }
+    </div>
+    @if (Model.TodayMatches.Count == 0)
+    {
+        <div class="dashboard-empty-state">No hay partidos programados para hoy.</div>
+    }
+    else
+    {
+        <div class="today-match-gallery" data-gallery-track tabindex="0" aria-label="Galería de partidos de hoy">
+            @for (var pageStart = 0; pageStart < Model.TodayMatches.Count; pageStart += 2)
+            {
+                var pageNumber = (pageStart / 2) + 1;
+                <div class="today-match-gallery-page" aria-label="Página @pageNumber de partidos de hoy">
+                    @for (var matchIndex = pageStart; matchIndex < System.Math.Min(pageStart + 2, Model.TodayMatches.Count); matchIndex++)
+                    {
+                        var match = Model.TodayMatches[matchIndex];
+                        var player1PhotoFileName = string.IsNullOrWhiteSpace(match.Player1.UserWeb) ? match.Player1.PlayerId : match.Player1.UserWeb;
+                        var player2PhotoFileName = string.IsNullOrWhiteSpace(match.Player2.UserWeb) ? match.Player2.PlayerId : match.Player2.UserWeb;
+                        var player1PhotoUrl = Url.Content($"~/img/users/{System.Uri.EscapeDataString(player1PhotoFileName)}.png");
+                        var player2PhotoUrl = Url.Content($"~/img/users/{System.Uri.EscapeDataString(player2PhotoFileName)}.png");
+                        var player1FlagUrl = string.IsNullOrWhiteSpace(match.Player1.CountryFlagFileName)
+                            ? string.Empty
+                            : Url.Content($"~/img/banderas/{System.Uri.EscapeDataString(match.Player1.CountryCode)}.png");
+                        var player2FlagUrl = string.IsNullOrWhiteSpace(match.Player2.CountryFlagFileName)
+                            ? string.Empty
+                            : Url.Content($"~/img/banderas/{System.Uri.EscapeDataString(match.Player2.CountryCode)}.png");
+                        var player1CountryLabel = string.IsNullOrWhiteSpace(match.Player1.CountryName) ? match.Player1.Team : match.Player1.CountryName;
+                        var player2CountryLabel = string.IsNullOrWhiteSpace(match.Player2.CountryName) ? match.Player2.Team : match.Player2.CountryName;
+
+                        <article class="today-match-card">
+                            <div class="today-match-meta">
+                                <strong>@match.TimeLabel</strong>
+                                <span>@(string.IsNullOrWhiteSpace(match.Name) ? match.Code : match.Name)</span>
+                            </div>
+                            <div class="today-match-lineup">
+                                <div class="today-match-player">
+                                    <div class="today-match-media">
+                                        <img class="today-match-user-photo" src="@player1PhotoUrl" alt="Foto de @match.Player1.Name" asp-append-version="true" />
+                                        @if (!string.IsNullOrWhiteSpace(player1FlagUrl))
+                                        {
+                                            <img class="today-match-flag" src="@player1FlagUrl" alt="Bandera de @player1CountryLabel" />
+                                        }
+                                    </div>
+                                    <strong>@match.Player1.Name</strong>
+                                    <span>@player1CountryLabel</span>
+                                </div>
+                                <div class="today-match-score" aria-label="Marcador @match.ScoreLabel">@match.ScoreLabel</div>
+                                <div class="today-match-player today-match-player-right">
+                                    <div class="today-match-media">
+                                        <img class="today-match-user-photo" src="@player2PhotoUrl" alt="Foto de @match.Player2.Name" asp-append-version="true" />
+                                        @if (!string.IsNullOrWhiteSpace(player2FlagUrl))
+                                        {
+                                            <img class="today-match-flag" src="@player2FlagUrl" alt="Bandera de @player2CountryLabel" />
+                                        }
+                                    </div>
+                                    <strong>@match.Player2.Name</strong>
+                                    <span>@player2CountryLabel</span>
+                                </div>
+                            </div>
+                        </article>
+                    }
+                </div>
+            }
+        </div>
+    }
+</section>
+
+<div class="analytics-grid dashboard-standings-grid">
+    <section class="analytics-card standings-card">
         <div class="section-title compact-title">
             <div>
                 <span class="eyebrow">Tabla</span>
@@ -141,74 +221,6 @@
         </div>
     </section>
 
-    <section class="analytics-card today-matches-card">
-        <div class="section-title compact-title">
-            <div>
-                <span class="eyebrow">Calendario</span>
-                <h2>Partidos de hoy</h2>
-            </div>
-        </div>
-        @if (Model.TodayMatches.Count == 0)
-        {
-            <div class="dashboard-empty-state">No hay partidos programados para hoy.</div>
-        }
-        else
-        {
-            <div class="today-match-list">
-                @foreach (var match in Model.TodayMatches)
-                {
-                    var player1PhotoFileName = string.IsNullOrWhiteSpace(match.Player1.UserWeb) ? match.Player1.PlayerId : match.Player1.UserWeb;
-                    var player2PhotoFileName = string.IsNullOrWhiteSpace(match.Player2.UserWeb) ? match.Player2.PlayerId : match.Player2.UserWeb;
-                    var player1PhotoUrl = Url.Content($"~/img/users/{System.Uri.EscapeDataString(player1PhotoFileName)}.png");
-                    var player2PhotoUrl = Url.Content($"~/img/users/{System.Uri.EscapeDataString(player2PhotoFileName)}.png");
-                    var player1FlagUrl = string.IsNullOrWhiteSpace(match.Player1.CountryFlagFileName)
-                        ? string.Empty
-                        : Url.Content($"~/img/banderas/{System.Uri.EscapeDataString(match.Player1.CountryCode)}.png");
-                    var player2FlagUrl = string.IsNullOrWhiteSpace(match.Player2.CountryFlagFileName)
-                        ? string.Empty
-                        : Url.Content($"~/img/banderas/{System.Uri.EscapeDataString(match.Player2.CountryCode)}.png");
-                    var player1CountryLabel = string.IsNullOrWhiteSpace(match.Player1.CountryName) ? match.Player1.Team : match.Player1.CountryName;
-                    var player2CountryLabel = string.IsNullOrWhiteSpace(match.Player2.CountryName) ? match.Player2.Team : match.Player2.CountryName;
-
-                    <article class="today-match-card">
-                        <div class="today-match-meta">
-                            <strong>@match.TimeLabel</strong>
-                            <span>@(string.IsNullOrWhiteSpace(match.Name) ? match.Code : match.Name)</span>
-                        </div>
-                        <div class="today-match-lineup">
-                            <div class="today-match-player">
-                                <div class="today-match-media">
-                                    <img class="today-match-user-photo" src="@player1PhotoUrl" alt="Foto de @match.Player1.Name" asp-append-version="true" />
-                                    @if (!string.IsNullOrWhiteSpace(player1FlagUrl))
-                                    {
-                                        <img class="today-match-flag" src="@player1FlagUrl" alt="Bandera de @player1CountryLabel" />
-                                    }
-                                </div>
-                                <strong>@match.Player1.Name</strong>
-                                <span>@player1CountryLabel</span>
-                            </div>
-                            <div class="today-match-score" aria-label="Marcador @match.ScoreLabel">@match.ScoreLabel</div>
-                            <div class="today-match-player today-match-player-right">
-                                <div class="today-match-media">
-                                    <img class="today-match-user-photo" src="@player2PhotoUrl" alt="Foto de @match.Player2.Name" asp-append-version="true" />
-                                    @if (!string.IsNullOrWhiteSpace(player2FlagUrl))
-                                    {
-                                        <img class="today-match-flag" src="@player2FlagUrl" alt="Bandera de @player2CountryLabel" />
-                                    }
-                                </div>
-                                <strong>@match.Player2.Name</strong>
-                                <span>@player2CountryLabel</span>
-                            </div>
-                        </div>
-                    </article>
-                }
-            </div>
-        }
-    </section>
-</div>
-
-<div class="analytics-grid dashboard-lower-analytics">
-    <div class="dashboard-lower-spacer" aria-hidden="true"></div>
     <section class="analytics-card goals-card">
         <div class="section-title compact-title">
             <div>
@@ -262,4 +274,48 @@
             })();
         </script>
     }
+    <script>
+        (() => {
+            const gallery = document.querySelector('[data-today-match-gallery]');
+            const track = gallery?.querySelector('[data-gallery-track]');
+            const pages = track ? Array.from(track.querySelectorAll('.today-match-gallery-page')) : [];
+            const previousButton = gallery?.querySelector('[data-gallery-prev]');
+            const nextButton = gallery?.querySelector('[data-gallery-next]');
+            const counter = gallery?.querySelector('[data-gallery-counter]');
+
+            if (!track || pages.length <= 1) {
+                return;
+            }
+
+            let currentPage = 0;
+
+            const updateControls = () => {
+                currentPage = Math.round(track.scrollLeft / track.clientWidth);
+                currentPage = Math.max(0, Math.min(currentPage, pages.length - 1));
+
+                if (counter) {
+                    counter.textContent = `${currentPage + 1} / ${pages.length}`;
+                }
+
+                if (previousButton) {
+                    previousButton.disabled = currentPage === 0;
+                }
+
+                if (nextButton) {
+                    nextButton.disabled = currentPage === pages.length - 1;
+                }
+            };
+
+            const goToPage = page => {
+                const nextPage = Math.max(0, Math.min(page, pages.length - 1));
+                track.scrollTo({ left: nextPage * track.clientWidth, behavior: 'smooth' });
+            };
+
+            previousButton?.addEventListener('click', () => goToPage(currentPage - 1));
+            nextButton?.addEventListener('click', () => goToPage(currentPage + 1));
+            track.addEventListener('scroll', updateControls, { passive: true });
+            window.addEventListener('resize', () => goToPage(currentPage));
+            updateControls();
+        })();
+    </script>
 }
