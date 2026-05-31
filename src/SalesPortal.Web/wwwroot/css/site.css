@@ -927,6 +927,132 @@ td {
     text-align: center;
 }
 
+.goals-card {
+    margin-top: 18px;
+}
+
+.today-match-list {
+    display: grid;
+    gap: 14px;
+}
+
+.today-match-card {
+    background: linear-gradient(135deg, #ffffff 0%, #fff6ef 100%);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 16px;
+}
+
+.today-match-meta {
+    align-items: center;
+    color: #666666;
+    display: flex;
+    font-size: 12px;
+    font-weight: 800;
+    gap: 10px;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    text-transform: uppercase;
+}
+
+.today-match-meta strong {
+    background: var(--black);
+    border-radius: 999px;
+    color: #ffffff;
+    padding: 6px 10px;
+}
+
+.today-match-lineup {
+    align-items: center;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
+.today-match-player {
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+}
+
+.today-match-player-right {
+    justify-items: end;
+    text-align: right;
+}
+
+.today-match-player strong {
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 100%;
+}
+
+.today-match-player span {
+    color: #666666;
+    font-size: 12px;
+    font-weight: 800;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 100%;
+}
+
+.today-match-media {
+    display: inline-flex;
+    position: relative;
+    width: max-content;
+}
+
+.today-match-user-photo {
+    background: var(--gray-soft);
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+    height: 58px;
+    object-fit: cover;
+    width: 58px;
+}
+
+.today-match-flag {
+    background: #ffffff;
+    border: 2px solid #ffffff;
+    border-radius: 8px;
+    bottom: -4px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.14);
+    height: 22px;
+    object-fit: cover;
+    position: absolute;
+    right: -8px;
+    width: 34px;
+}
+
+.today-match-score {
+    background: var(--orange);
+    border-radius: 16px;
+    box-shadow: 0 10px 20px rgba(229, 95, 0, 0.24);
+    color: #ffffff;
+    font-size: 22px;
+    font-weight: 900;
+    min-width: 74px;
+    padding: 12px 14px;
+    text-align: center;
+}
+
+@media (max-width: 520px) {
+    .today-match-lineup {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        text-align: center;
+    }
+
+    .today-match-player,
+    .today-match-player-right {
+        justify-items: center;
+        text-align: center;
+    }
+}
+
 .admin-cup-grid {
     display: grid;
     gap: 18px;

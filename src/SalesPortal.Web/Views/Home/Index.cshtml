@@ -141,36 +141,99 @@
         </div>
     </section>
 
-    <section class="analytics-card">
+    <section class="analytics-card today-matches-card">
         <div class="section-title compact-title">
             <div>
-                <span class="eyebrow">Ataque</span>
-                <h2>Goles a favor</h2>
+                <span class="eyebrow">Calendario</span>
+                <h2>Partidos de hoy</h2>
             </div>
         </div>
-        @if (Model.GoalChart.Count == 0)
+        @if (Model.TodayMatches.Count == 0)
         {
-            <div class="dashboard-empty-state">No hay resultados para graficar.</div>
+            <div class="dashboard-empty-state">No hay partidos programados para hoy.</div>
         }
         else
         {
-            <div class="status-list">
-                @foreach (var row in Model.GoalChart)
+            <div class="today-match-list">
+                @foreach (var match in Model.TodayMatches)
                 {
-                    <div class="status-row">
-                        <div class="status-row-header">
-                            <strong>@row.Team</strong>
-                            <span>@row.GoalsFor.ToString("0") goles</span>
+                    var player1PhotoUrl = Url.Content($"~/img/users/{System.Uri.EscapeDataString(match.Player1.PlayerId)}.png");
+                    var player2PhotoUrl = Url.Content($"~/img/users/{System.Uri.EscapeDataString(match.Player2.PlayerId)}.png");
+                    var player1FlagUrl = string.IsNullOrWhiteSpace(match.Player1.CountryFlagFileName)
+                        ? string.Empty
+                        : Url.Content($"~/img/banderas/{System.Uri.EscapeDataString(match.Player1.CountryCode)}.png");
+                    var player2FlagUrl = string.IsNullOrWhiteSpace(match.Player2.CountryFlagFileName)
+                        ? string.Empty
+                        : Url.Content($"~/img/banderas/{System.Uri.EscapeDataString(match.Player2.CountryCode)}.png");
+                    var player1CountryLabel = string.IsNullOrWhiteSpace(match.Player1.CountryName) ? match.Player1.Team : match.Player1.CountryName;
+                    var player2CountryLabel = string.IsNullOrWhiteSpace(match.Player2.CountryName) ? match.Player2.Team : match.Player2.CountryName;
+
+                    <article class="today-match-card">
+                        <div class="today-match-meta">
+                            <strong>@match.TimeLabel</strong>
+                            <span>@(string.IsNullOrWhiteSpace(match.Name) ? match.Code : match.Name)</span>
                         </div>
-                        <div class="progress-track" aria-hidden="true">
-                            <span style="width: @row.Percentage%"></span>
+                        <div class="today-match-lineup">
+                            <div class="today-match-player">
+                                <div class="today-match-media">
+                                    <img class="today-match-user-photo" src="@player1PhotoUrl" alt="Foto de @match.Player1.Name" asp-append-version="true" />
+                                    @if (!string.IsNullOrWhiteSpace(player1FlagUrl))
+                                    {
+                                        <img class="today-match-flag" src="@player1FlagUrl" alt="Bandera de @player1CountryLabel" />
+                                    }
+                                </div>
+                                <strong>@match.Player1.Name</strong>
+                                <span>@player1CountryLabel</span>
+                            </div>
+                            <div class="today-match-score" aria-label="Marcador @match.ScoreLabel">@match.ScoreLabel</div>
+                            <div class="today-match-player today-match-player-right">
+                                <div class="today-match-media">
+                                    <img class="today-match-user-photo" src="@player2PhotoUrl" alt="Foto de @match.Player2.Name" asp-append-version="true" />
+                                    @if (!string.IsNullOrWhiteSpace(player2FlagUrl))
+                                    {
+                                        <img class="today-match-flag" src="@player2FlagUrl" alt="Bandera de @player2CountryLabel" />
+                                    }
+                                </div>
+                                <strong>@match.Player2.Name</strong>
+                                <span>@player2CountryLabel</span>
+                            </div>
                         </div>
-                    </div>
+                    </article>
                 }
             </div>
         }
     </section>
 </div>
+
+<section class="analytics-card goals-card">
+    <div class="section-title compact-title">
+        <div>
+            <span class="eyebrow">Ataque</span>
+            <h2>Goles a favor</h2>
+        </div>
+    </div>
+    @if (Model.GoalChart.Count == 0)
+    {
+        <div class="dashboard-empty-state">No hay resultados para graficar.</div>
+    }
+    else
+    {
+        <div class="status-list">
+            @foreach (var row in Model.GoalChart)
+            {
+                <div class="status-row">
+                    <div class="status-row-header">
+                        <strong>@row.Team</strong>
+                        <span>@row.GoalsFor.ToString("0") goles</span>
+                    </div>
+                    <div class="progress-track" aria-hidden="true">
+                        <span style="width: @row.Percentage%"></span>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</section>
 
 @section Scripts {
     @if (showAssignmentPopup)

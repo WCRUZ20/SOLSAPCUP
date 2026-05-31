@@ -74,6 +74,7 @@ public sealed class HomeController : Controller
             GoalsFor = currentStatistics?.GoalsFor ?? 0,
             GoalsAgainst = currentStatistics?.GoalsAgainst ?? 0,
             Standings = standingRows,
+            TodayMatches = BuildTodayMatches(matches, competitors, countries),
             GoalChart = standingRows.Select(row => new GoalChartRowViewModel
             {
                 Team = row.Team,
@@ -83,6 +84,59 @@ public sealed class HomeController : Controller
         };
 
         return View(model);
+    }
+
+
+    private static IReadOnlyList<TodayMatchViewModel> BuildTodayMatches(
+        IReadOnlyList<CupMatch> matches,
+        IReadOnlyList<Competitor> competitors,
+        IReadOnlyList<WorldCupCountry> countries)
+    {
+        var today = DateTime.Today;
+
+        return matches
+            .Where(match => match.MatchDate.HasValue && match.MatchDate.Value.Date == today)
+            .OrderBy(match => match.MatchTime ?? short.MaxValue)
+            .ThenBy(match => match.Name, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(match => match.Code, StringComparer.OrdinalIgnoreCase)
+            .Select(match => new TodayMatchViewModel
+            {
+                Code = match.Code,
+                Name = match.Name,
+                TimeLabel = FormatMatchTime(match.MatchTime),
+                Player1 = BuildTodayMatchPlayer(match.Player1, competitors, countries),
+                Player2 = BuildTodayMatchPlayer(match.Player2, competitors, countries),
+                GoalsPlayer1 = match.GoalsPlayer1,
+                GoalsPlayer2 = match.GoalsPlayer2
+            })
+            .ToList();
+    }
+
+    private static TodayMatchPlayerViewModel BuildTodayMatchPlayer(
+        string matchPlayer,
+        IReadOnlyList<Competitor> competitors,
+        IReadOnlyList<WorldCupCountry> countries)
+    {
+        var competitor = competitors.FirstOrDefault(candidate => IsSamePlayer(matchPlayer, candidate));
+        var country = competitor == null ? null : FindCountryForTeam(countries, competitor.Team);
+
+        return new TodayMatchPlayerViewModel
+        {
+            Name = competitor?.Name ?? matchPlayer,
+            PlayerId = competitor?.PlayerId ?? matchPlayer,
+            Team = competitor?.Team ?? string.Empty,
+            CountryCode = country?.CountryCode.Trim() ?? string.Empty,
+            CountryName = country == null ? (competitor?.Team ?? string.Empty) : GetCountryDisplayName(country)
+        };
+    }
+
+    private static string FormatMatchTime(short? matchTime)
+    {
+        if (!matchTime.HasValue)
+            return "Hora por definir";
+
+        var time = Math.Clamp(matchTime.Value, (short)0, (short)2359);
+        return $"{time / 100:00}:{time % 100:00}";
     }
 
     private static WorldCupCountry? FindCountryForTeam(IReadOnlyList<WorldCupCountry> countries, string team)
