@@ -36,13 +36,11 @@
             }
 
             toggle.addEventListener('click', function () {
-                modules.forEach(function (otherModule) {
-                    if (otherModule !== module) {
-                        setExpanded(otherModule, false);
-                    }
-                });
+                var shouldExpand = !module.classList.contains('is-expanded');
 
-                setExpanded(module, true);
+                modules.forEach(function (otherModule) {
+                    setExpanded(otherModule, otherModule === module && shouldExpand);
+                });
             });
         });
     }
