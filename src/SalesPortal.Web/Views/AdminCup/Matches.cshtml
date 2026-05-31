@@ -21,6 +21,18 @@
             <div class="admin-module-actions">
                 <form asp-action="CalculateMatches" method="post" class="admin-inline-action" onsubmit="return confirm('¿Calcular el calendario con todos los jugadores activos?');">
                     @Html.AntiForgeryToken()
+                    <label class="admin-schedule-field">
+                        <span>Fecha</span>
+                        <input asp-for="Schedule.StartDate" type="date" class="cup-input" lang="es" required />
+                    </label>
+                    <label class="admin-schedule-field">
+                        <span>Hora</span>
+                        <input asp-for="Schedule.StartTime" type="time" class="cup-input" required />
+                    </label>
+                    <label class="admin-schedule-field">
+                        <span>Intervalo (min)</span>
+                        <input asp-for="Schedule.IntervalMinutes" type="number" class="cup-input" min="1" step="1" required />
+                    </label>
                     <button type="submit" class="btn btn-primary">Calcular partidos</button>
                 </form>
             </div>

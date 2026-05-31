@@ -1294,7 +1294,29 @@ td {
 }
 
 .admin-inline-action {
+    align-items: end;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
     margin: 0;
+}
+
+.admin-schedule-field {
+    display: grid;
+    gap: 4px;
+    min-width: 112px;
+}
+
+.admin-schedule-field span {
+    color: #666666;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.admin-schedule-field .cup-input {
+    min-height: 38px;
+    padding: 8px 10px;
 }
 
 .admin-editor-shell {

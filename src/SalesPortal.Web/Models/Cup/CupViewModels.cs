@@ -30,6 +30,7 @@ namespace SalesPortal.Web.Models.Cup
     {
         public IReadOnlyList<MatchFormViewModel> Matches { get; set; } = Array.Empty<MatchFormViewModel>();
         public MatchFormViewModel Match { get; set; } = new();
+        public MatchScheduleFormViewModel Schedule { get; set; } = new();
     }
 
     public sealed class AdminCupCountriesViewModel
@@ -52,6 +53,15 @@ namespace SalesPortal.Web.Models.Cup
         public decimal GoalDifference { get; set; }
         public decimal TablePosition { get; set; }
         public string Status { get; set; } = string.Empty;
+    }
+
+    public sealed class MatchScheduleFormViewModel
+    {
+        [Required] public DateTime? StartDate { get; set; } = DateTime.Today;
+        [Required] public string StartTime { get; set; } = "17:00";
+        [Required]
+        [Range(1, 1440)]
+        public int IntervalMinutes { get; set; } = 10;
     }
 
     public sealed class MatchFormViewModel

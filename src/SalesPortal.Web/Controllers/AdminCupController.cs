@@ -9,10 +9,6 @@ namespace SalesPortal.Web.Controllers;
 [Authorize(Policy = "Admin")]
 public sealed class AdminCupController : Controller
 {
-    private static readonly DateTime MatchScheduleStartDate = new(2026, 6, 12);
-    private static readonly TimeSpan MatchScheduleStartTime = TimeSpan.FromHours(17);
-    private static readonly TimeSpan MatchScheduleInterval = TimeSpan.FromMinutes(10);
-
     private readonly ITenantResolver _tenantResolver;
     private readonly ICupRepository _cupRepository;
 
@@ -126,8 +122,26 @@ public sealed class AdminCupController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> CalculateMatches(CancellationToken cancellationToken)
+    public async Task<IActionResult> CalculateMatches(AdminCupMatchesViewModel model, CancellationToken cancellationToken)
     {
+        if (!model.Schedule.StartDate.HasValue)
+        {
+            TempData["Error"] = "Ingrese la fecha inicial para calcular partidos.";
+            return RedirectToAction(nameof(Matches));
+        }
+
+        if (!TryParseScheduleStartTime(model.Schedule.StartTime, out var scheduleStartTime))
+        {
+            TempData["Error"] = "Ingrese una hora inicial válida para calcular partidos.";
+            return RedirectToAction(nameof(Matches));
+        }
+
+        if (model.Schedule.IntervalMinutes is < 1 or > 1440)
+        {
+            TempData["Error"] = "Ingrese un intervalo entre 1 y 1440 minutos para calcular partidos.";
+            return RedirectToAction(nameof(Matches));
+        }
+
         var tenant = _tenantResolver.ResolveByHost(HttpContext.Request.Host.Value);
         var competitors = await _cupRepository.GetCompetitorsAsync(tenant, cancellationToken);
         var activeCompetitors = competitors
@@ -150,7 +164,11 @@ public sealed class AdminCupController : Controller
         }
 
         var existingMatches = await _cupRepository.GetMatchesAsync(tenant, cancellationToken);
-        var schedule = BuildRoundRobinSchedule(activeCompetitors, MatchScheduleStartDate);
+        var schedule = BuildRoundRobinSchedule(
+            activeCompetitors,
+            model.Schedule.StartDate.Value,
+            scheduleStartTime,
+            TimeSpan.FromMinutes(model.Schedule.IntervalMinutes));
         var usedCodes = existingMatches
             .Select(match => match.Code)
             .Where(code => !string.IsNullOrWhiteSpace(code))
@@ -278,17 +296,20 @@ public sealed class AdminCupController : Controller
     }
 
 
-    private static IReadOnlyList<ScheduledMatch> BuildRoundRobinSchedule(IReadOnlyList<Competitor> competitors, DateTime startDate)
+    private static IReadOnlyList<ScheduledMatch> BuildRoundRobinSchedule(
+        IReadOnlyList<Competitor> competitors,
+        DateTime startDate,
+        TimeSpan startTime,
+        TimeSpan matchInterval)
     {
         var rotation = competitors.ToList();
         var rounds = competitors.Count - 1;
         var matchesPerRound = competitors.Count / 2;
         var schedule = new List<ScheduledMatch>(rounds * matchesPerRound);
+        var scheduledDateTime = startDate.Date.Add(startTime);
 
         for (var roundIndex = 0; roundIndex < rounds; roundIndex++)
         {
-            var matchDate = startDate.Date.AddDays(roundIndex);
-
             for (var matchIndex = 0; matchIndex < matchesPerRound; matchIndex++)
             {
                 var player1 = rotation[matchIndex];
@@ -300,10 +321,12 @@ public sealed class AdminCupController : Controller
                 schedule.Add(new ScheduledMatch(
                     player1,
                     player2,
-                    matchDate,
-                    BuildMatchTime(matchIndex),
+                    scheduledDateTime.Date,
+                    BuildMatchTime(scheduledDateTime),
                     $"{GetCompetitorDisplayName(player1)} vs {GetCompetitorDisplayName(player2)}",
                     $"Generado automáticamente - Jornada {roundIndex + 1}"));
+
+                scheduledDateTime = scheduledDateTime.Add(matchInterval);
             }
 
             var last = rotation[^1];
@@ -314,13 +337,18 @@ public sealed class AdminCupController : Controller
         return schedule;
     }
 
-    private static short BuildMatchTime(int matchIndex)
+    private static bool TryParseScheduleStartTime(string? startTime, out TimeSpan parsedStartTime)
     {
-        var totalMinutes = (int)MatchScheduleStartTime.TotalMinutes + ((int)MatchScheduleInterval.TotalMinutes * matchIndex);
-        var hour = (totalMinutes / 60) % 24;
-        var minute = totalMinutes % 60;
+        if (TimeSpan.TryParse(startTime, out parsedStartTime))
+            return parsedStartTime >= TimeSpan.Zero && parsedStartTime < TimeSpan.FromDays(1);
 
-        return (short)((hour * 100) + minute);
+        parsedStartTime = default;
+        return false;
+    }
+
+    private static short BuildMatchTime(DateTime scheduledDateTime)
+    {
+        return (short)((scheduledDateTime.Hour * 100) + scheduledDateTime.Minute);
     }
 
     private static CupMatch? FindExistingMatchForPair(
