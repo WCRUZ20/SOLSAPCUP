@@ -157,8 +157,10 @@
             <div class="today-match-list">
                 @foreach (var match in Model.TodayMatches)
                 {
-                    var player1PhotoUrl = Url.Content($"~/img/users/{System.Uri.EscapeDataString(match.Player1.PlayerId)}.png");
-                    var player2PhotoUrl = Url.Content($"~/img/users/{System.Uri.EscapeDataString(match.Player2.PlayerId)}.png");
+                    var player1PhotoFileName = string.IsNullOrWhiteSpace(match.Player1.UserWeb) ? match.Player1.PlayerId : match.Player1.UserWeb;
+                    var player2PhotoFileName = string.IsNullOrWhiteSpace(match.Player2.UserWeb) ? match.Player2.PlayerId : match.Player2.UserWeb;
+                    var player1PhotoUrl = Url.Content($"~/img/users/{System.Uri.EscapeDataString(player1PhotoFileName)}.png");
+                    var player2PhotoUrl = Url.Content($"~/img/users/{System.Uri.EscapeDataString(player2PhotoFileName)}.png");
                     var player1FlagUrl = string.IsNullOrWhiteSpace(match.Player1.CountryFlagFileName)
                         ? string.Empty
                         : Url.Content($"~/img/banderas/{System.Uri.EscapeDataString(match.Player1.CountryCode)}.png");

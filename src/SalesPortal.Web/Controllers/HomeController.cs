@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SalesPortal.Application.Abstractions.Persistence;
 using SalesPortal.Domain.Cup;
+using SalesPortal.Domain.Tenants;
 using SalesPortal.Shared.Security;
 using SalesPortal.Web.Models.Home;
 using System.Security.Claims;
@@ -13,11 +14,16 @@ public sealed class HomeController : Controller
 {
     private readonly ITenantResolver _tenantResolver;
     private readonly ICupRepository _cupRepository;
+    private readonly ICustomerRepository _customerRepository;
 
-    public HomeController(ITenantResolver tenantResolver, ICupRepository cupRepository)
+    public HomeController(
+        ITenantResolver tenantResolver,
+        ICupRepository cupRepository,
+        ICustomerRepository customerRepository)
     {
         _tenantResolver = tenantResolver;
         _cupRepository = cupRepository;
+        _customerRepository = customerRepository;
     }
 
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
@@ -31,6 +37,11 @@ public sealed class HomeController : Controller
         var countries = await _cupRepository.GetWorldCupCountriesAsync(tenant, cancellationToken);
         var currentCompetitor = competitors.FirstOrDefault(c => string.Equals(c.PlayerId, playerId, StringComparison.OrdinalIgnoreCase));
         var currentCountry = currentCompetitor == null ? null : FindCountryForTeam(countries, currentCompetitor.Team);
+        var todayMatchUserWebByPlayerId = await BuildTodayMatchUserWebByPlayerIdAsync(
+            tenant,
+            matches,
+            competitors,
+            cancellationToken);
         var statistics = CalculateStandings(competitors, matches);
         var standingRows = statistics
             .Select(row =>
@@ -74,7 +85,7 @@ public sealed class HomeController : Controller
             GoalsFor = currentStatistics?.GoalsFor ?? 0,
             GoalsAgainst = currentStatistics?.GoalsAgainst ?? 0,
             Standings = standingRows,
-            TodayMatches = BuildTodayMatches(matches, competitors, countries),
+            TodayMatches = BuildTodayMatches(matches, competitors, countries, todayMatchUserWebByPlayerId),
             GoalChart = standingRows.Select(row => new GoalChartRowViewModel
             {
                 Team = row.Team,
@@ -87,10 +98,37 @@ public sealed class HomeController : Controller
     }
 
 
+    private async Task<IReadOnlyDictionary<string, string>> BuildTodayMatchUserWebByPlayerIdAsync(
+        Tenant tenant,
+        IReadOnlyList<CupMatch> matches,
+        IReadOnlyList<Competitor> competitors,
+        CancellationToken cancellationToken)
+    {
+        var today = DateTime.Today;
+        var playerIds = matches
+            .Where(match => match.MatchDate.HasValue && match.MatchDate.Value.Date == today)
+            .SelectMany(match => new[] { match.Player1, match.Player2 })
+            .Select(matchPlayer => competitors.FirstOrDefault(competitor => IsSamePlayer(matchPlayer, competitor))?.PlayerId)
+            .Where(playerId => !string.IsNullOrWhiteSpace(playerId))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var userWebByPlayerId = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var playerId in playerIds)
+        {
+            var customer = await _customerRepository.GetByCardCodeAsync(tenant, playerId!, cancellationToken);
+            if (!string.IsNullOrWhiteSpace(customer?.UserWeb))
+                userWebByPlayerId[playerId!] = customer.UserWeb.Trim();
+        }
+
+        return userWebByPlayerId;
+    }
+
     private static IReadOnlyList<TodayMatchViewModel> BuildTodayMatches(
         IReadOnlyList<CupMatch> matches,
         IReadOnlyList<Competitor> competitors,
-        IReadOnlyList<WorldCupCountry> countries)
+        IReadOnlyList<WorldCupCountry> countries,
+        IReadOnlyDictionary<string, string> userWebByPlayerId)
     {
         var today = DateTime.Today;
 
@@ -104,8 +142,8 @@ public sealed class HomeController : Controller
                 Code = match.Code,
                 Name = match.Name,
                 TimeLabel = FormatMatchTime(match.MatchTime),
-                Player1 = BuildTodayMatchPlayer(match.Player1, competitors, countries),
-                Player2 = BuildTodayMatchPlayer(match.Player2, competitors, countries),
+                Player1 = BuildTodayMatchPlayer(match.Player1, competitors, countries, userWebByPlayerId),
+                Player2 = BuildTodayMatchPlayer(match.Player2, competitors, countries, userWebByPlayerId),
                 GoalsPlayer1 = match.GoalsPlayer1,
                 GoalsPlayer2 = match.GoalsPlayer2
             })
@@ -115,15 +153,21 @@ public sealed class HomeController : Controller
     private static TodayMatchPlayerViewModel BuildTodayMatchPlayer(
         string matchPlayer,
         IReadOnlyList<Competitor> competitors,
-        IReadOnlyList<WorldCupCountry> countries)
+        IReadOnlyList<WorldCupCountry> countries,
+        IReadOnlyDictionary<string, string> userWebByPlayerId)
     {
         var competitor = competitors.FirstOrDefault(candidate => IsSamePlayer(matchPlayer, candidate));
         var country = competitor == null ? null : FindCountryForTeam(countries, competitor.Team);
+        var playerId = competitor?.PlayerId ?? matchPlayer;
+        var userWeb = userWebByPlayerId.TryGetValue(playerId, out var resolvedUserWeb)
+            ? resolvedUserWeb
+            : string.Empty;
 
         return new TodayMatchPlayerViewModel
         {
             Name = competitor?.Name ?? matchPlayer,
-            PlayerId = competitor?.PlayerId ?? matchPlayer,
+            PlayerId = playerId,
+            UserWeb = userWeb,
             Team = competitor?.Team ?? string.Empty,
             CountryCode = country?.CountryCode.Trim() ?? string.Empty,
             CountryName = country == null ? (competitor?.Team ?? string.Empty) : GetCountryDisplayName(country)

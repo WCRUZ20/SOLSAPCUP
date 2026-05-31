@@ -56,6 +56,7 @@ namespace SalesPortal.Web.Models.Home
     {
         public string Name { get; set; } = string.Empty;
         public string PlayerId { get; set; } = string.Empty;
+        public string UserWeb { get; set; } = string.Empty;
         public string Team { get; set; } = string.Empty;
         public string CountryCode { get; set; } = string.Empty;
         public string CountryName { get; set; } = string.Empty;
