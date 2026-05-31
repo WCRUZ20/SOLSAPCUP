@@ -306,10 +306,11 @@ public sealed class AdminCupController : Controller
         var rounds = competitors.Count - 1;
         var matchesPerRound = competitors.Count / 2;
         var schedule = new List<ScheduledMatch>(rounds * matchesPerRound);
-        var scheduledDateTime = startDate.Date.Add(startTime);
 
         for (var roundIndex = 0; roundIndex < rounds; roundIndex++)
         {
+            var matchDate = startDate.Date.AddDays(roundIndex);
+
             for (var matchIndex = 0; matchIndex < matchesPerRound; matchIndex++)
             {
                 var player1 = rotation[matchIndex];
@@ -321,12 +322,10 @@ public sealed class AdminCupController : Controller
                 schedule.Add(new ScheduledMatch(
                     player1,
                     player2,
-                    scheduledDateTime.Date,
-                    BuildMatchTime(scheduledDateTime),
+                    matchDate,
+                    BuildMatchTime(startTime, matchInterval, matchIndex),
                     $"{GetCompetitorDisplayName(player1)} vs {GetCompetitorDisplayName(player2)}",
                     $"Generado automáticamente - Jornada {roundIndex + 1}"));
-
-                scheduledDateTime = scheduledDateTime.Add(matchInterval);
             }
 
             var last = rotation[^1];
@@ -346,9 +345,13 @@ public sealed class AdminCupController : Controller
         return false;
     }
 
-    private static short BuildMatchTime(DateTime scheduledDateTime)
+    private static short BuildMatchTime(TimeSpan startTime, TimeSpan matchInterval, int matchIndex)
     {
-        return (short)((scheduledDateTime.Hour * 100) + scheduledDateTime.Minute);
+        var totalMinutes = (int)startTime.TotalMinutes + ((int)matchInterval.TotalMinutes * matchIndex);
+        var hour = (totalMinutes / 60) % 24;
+        var minute = totalMinutes % 60;
+
+        return (short)((hour * 100) + minute);
     }
 
     private static CupMatch? FindExistingMatchForPair(
