@@ -93,11 +93,11 @@
     }
     else
     {
-        <div class="today-match-gallery" data-gallery-track tabindex="0" aria-label="Galería de partidos de hoy">
+        <div class="today-match-gallery" data-gallery-track aria-label="Galería de partidos de hoy">
             @for (var pageStart = 0; pageStart < Model.TodayMatches.Count; pageStart += 2)
             {
                 var pageNumber = (pageStart / 2) + 1;
-                <div class="today-match-gallery-page" aria-label="Página @pageNumber de partidos de hoy">
+                <div class="today-match-gallery-page @(pageStart == 0 ? "is-active" : string.Empty)" aria-label="Página @pageNumber de partidos de hoy">
                     @for (var matchIndex = pageStart; matchIndex < System.Math.Min(pageStart + 2, Model.TodayMatches.Count); matchIndex++)
                     {
                         var match = Model.TodayMatches[matchIndex];
@@ -289,9 +289,12 @@
 
             let currentPage = 0;
 
-            const updateControls = () => {
-                currentPage = Math.round(track.scrollLeft / track.clientWidth);
-                currentPage = Math.max(0, Math.min(currentPage, pages.length - 1));
+            const showPage = page => {
+                currentPage = Math.max(0, Math.min(page, pages.length - 1));
+
+                pages.forEach((galleryPage, index) => {
+                    galleryPage.classList.toggle('is-active', index === currentPage);
+                });
 
                 if (counter) {
                     counter.textContent = `${currentPage + 1} / ${pages.length}`;
@@ -306,16 +309,9 @@
                 }
             };
 
-            const goToPage = page => {
-                const nextPage = Math.max(0, Math.min(page, pages.length - 1));
-                track.scrollTo({ left: nextPage * track.clientWidth, behavior: 'smooth' });
-            };
-
-            previousButton?.addEventListener('click', () => goToPage(currentPage - 1));
-            nextButton?.addEventListener('click', () => goToPage(currentPage + 1));
-            track.addEventListener('scroll', updateControls, { passive: true });
-            window.addEventListener('resize', () => goToPage(currentPage));
-            updateControls();
+            previousButton?.addEventListener('click', () => showPage(currentPage - 1));
+            nextButton?.addEventListener('click', () => showPage(currentPage + 1));
+            showPage(currentPage);
         })();
     </script>
 }

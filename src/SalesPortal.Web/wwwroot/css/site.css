@@ -961,20 +961,17 @@ td {
 }
 
 .today-match-gallery {
-    display: flex;
-    gap: 18px;
-    overflow-x: auto;
-    scroll-behavior: smooth;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: thin;
+    min-width: 0;
 }
 
 .today-match-gallery-page {
-    display: grid;
-    flex: 0 0 100%;
+    display: none;
     gap: 18px;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    scroll-snap-align: start;
+}
+
+.today-match-gallery-page.is-active {
+    display: grid;
 }
 
 .today-match-gallery-controls {
