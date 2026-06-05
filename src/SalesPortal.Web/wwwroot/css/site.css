@@ -1866,13 +1866,15 @@ td {
 }
 
 .login-notice-overlay {
-    align-items: flex-start;
+    align-items: center;
     background: rgba(17, 17, 17, 0.42);
     display: grid;
     gap: 14px;
     inset: 0;
     justify-items: center;
+    min-height: 100vh;
     overflow-y: auto;
+    place-content: center;
     padding: 34px 18px;
     position: fixed;
     z-index: 1000;
@@ -1886,12 +1888,24 @@ td {
     box-shadow: 0 22px 60px rgba(17, 17, 17, 0.24);
     max-width: 560px;
     padding: 24px;
+    text-align: center;
     width: min(100%, 560px);
+}
+
+.login-notice-image {
+    border-radius: 18px;
+    display: block;
+    height: auto;
+    margin: 0 auto 18px;
+    max-height: 280px;
+    max-width: 100%;
+    object-fit: contain;
+    width: min(100%, 420px);
 }
 
 .login-notice-card.is-hiding {
     opacity: 0;
-    transform: translateY(-8px);
+    transform: scale(0.98);
     transition: opacity 0.2s ease, transform 0.2s ease;
 }
 

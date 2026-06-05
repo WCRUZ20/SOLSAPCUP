@@ -118,11 +118,15 @@
             @foreach (var notice in loginNotices)
             {
                 var durationMilliseconds = Math.Max(1, notice.DurationSeconds) * 1000;
+                var noticeImageUrl = string.IsNullOrWhiteSpace(notice.ImageUrl)
+                    ? Url.Content("~/img/logosolsapcupsf.png")
+                    : Url.Content(notice.ImageUrl);
                 <article class="login-notice-card" data-login-notice data-duration-ms="@durationMilliseconds" role="dialog" aria-live="polite" aria-label="Aviso de inicio de sesión">
                     <div class="login-notice-header">
                         <span class="eyebrow">Aviso</span>
                         <button type="button" class="login-notice-close" data-login-notice-close aria-label="Cerrar aviso">×</button>
                     </div>
+                    <img class="login-notice-image" src="@noticeImageUrl" alt="Imagen del aviso @notice.Title" />
                     <h2>@notice.Title</h2>
                     <p>@notice.Message</p>
                 </article>

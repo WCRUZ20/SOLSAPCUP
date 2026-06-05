@@ -27,6 +27,7 @@
                         <th>Desde</th>
                         <th>Hasta</th>
                         <th>Duración</th>
+                        <th>Imagen</th>
                         <th>Estado</th>
                     </tr>
                 </thead>
@@ -38,13 +39,14 @@
                     <tr class="admin-selectable-row" tabindex="0"
                         data-summary-title="@notice.Title" data-summary-detail="@notice.Code"
                         data-field-code="@notice.Code" data-field-title="@notice.Title" data-field-message="@notice.Message"
-                        data-field-start-date="@startDate" data-field-end-date="@endDate"
+                        data-field-image-url="@notice.ImageUrl" data-field-start-date="@startDate" data-field-end-date="@endDate"
                         data-field-duration-seconds="@notice.DurationSeconds" data-field-is-active="@notice.IsActive.ToString().ToLowerInvariant()">
                         <td class="text-strong">@notice.Code</td>
                         <td>@notice.Title</td>
                         <td>@(notice.StartDate?.ToString("dd/MM/yyyy") ?? "--")</td>
                         <td>@(notice.EndDate?.ToString("dd/MM/yyyy") ?? "--")</td>
                         <td>@notice.DurationSeconds s</td>
+                        <td>@(string.IsNullOrWhiteSpace(notice.ImageUrl) ? "Logo por defecto" : "Personalizada")</td>
                         <td><span class="admin-table-chip">@notice.StatusLabel</span></td>
                     </tr>
                 }
@@ -79,6 +81,10 @@
             <div class="form-field form-field-wide">
                 <label asp-for="Notice.Message">Mensaje</label>
                 <textarea asp-for="Notice.Message" class="cup-input" rows="4" placeholder="Mensaje que verá el usuario al iniciar sesión" disabled data-admin-field="message"></textarea>
+            </div>
+            <div class="form-field form-field-wide">
+                <label asp-for="Notice.ImageUrl">Imagen del aviso</label>
+                <input asp-for="Notice.ImageUrl" class="cup-input" placeholder="~/img/logosolsapcupsf.png o https://..." disabled data-admin-field="imageUrl" />
             </div>
             <div class="form-field">
                 <label asp-for="Notice.StartDate">Desde</label>

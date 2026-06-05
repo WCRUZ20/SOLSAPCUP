@@ -51,6 +51,7 @@ namespace SalesPortal.Web.Models.Cup
         [Required] public string Code { get; set; } = string.Empty;
         [Required] public string Title { get; set; } = string.Empty;
         [Required] public string Message { get; set; } = string.Empty;
+        public string ImageUrl { get; set; } = string.Empty;
         [Required] public DateTime? StartDate { get; set; } = DateTime.Today;
         [Required] public DateTime? EndDate { get; set; } = DateTime.Today;
         [Required]
