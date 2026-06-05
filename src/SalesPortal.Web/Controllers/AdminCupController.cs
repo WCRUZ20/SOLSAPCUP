@@ -80,7 +80,7 @@ public sealed class AdminCupController : Controller
             Code = model.Notice.Code.Trim(),
             Title = model.Notice.Title.Trim(),
             Message = model.Notice.Message.Trim(),
-            ImageUrl = model.Notice.ImageUrl?.Trim() ?? string.Empty,
+            ImageUrl = NormalizeNoticeImagePath(model.Notice.ImageUrl),
             StartDate = model.Notice.StartDate.Value.Date,
             EndDate = model.Notice.EndDate.Value.Date,
             DurationSeconds = model.Notice.DurationSeconds,
@@ -618,13 +618,26 @@ public sealed class AdminCupController : Controller
                 Code = n.Code,
                 Title = n.Title,
                 Message = n.Message,
-                ImageUrl = n.ImageUrl,
+                ImageUrl = NormalizeNoticeImagePath(n.ImageUrl),
                 StartDate = n.StartDate,
                 EndDate = n.EndDate,
                 DurationSeconds = n.DurationSeconds,
                 IsActive = n.IsActive
             }).ToList()
         };
+    }
+
+    private static string NormalizeNoticeImagePath(string? imagePath)
+    {
+        var normalized = (imagePath ?? string.Empty).Trim().Replace('\\', '/');
+        if (normalized.StartsWith("~/", StringComparison.OrdinalIgnoreCase))
+            normalized = normalized[2..];
+
+        normalized = normalized.TrimStart('/');
+        if (normalized.StartsWith("img/", StringComparison.OrdinalIgnoreCase))
+            normalized = normalized[4..];
+
+        return normalized;
     }
 
     private async Task<AdminCupPlayersViewModel> BuildPlayersModelAsync(CancellationToken cancellationToken)

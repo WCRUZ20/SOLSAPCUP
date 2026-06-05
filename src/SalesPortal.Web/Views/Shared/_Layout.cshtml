@@ -118,9 +118,14 @@
             @foreach (var notice in loginNotices)
             {
                 var durationMilliseconds = Math.Max(1, notice.DurationSeconds) * 1000;
-                var noticeImageUrl = string.IsNullOrWhiteSpace(notice.ImageUrl)
-                    ? Url.Content("~/img/logosolsapcupsf.png")
-                    : Url.Content(notice.ImageUrl);
+                var noticeImagePath = (notice.ImageUrl ?? string.Empty).Trim().Replace('\\', '/');
+                if (noticeImagePath.StartsWith("~/", StringComparison.OrdinalIgnoreCase))
+                    noticeImagePath = noticeImagePath[2..];
+                noticeImagePath = noticeImagePath.TrimStart('/');
+                if (noticeImagePath.StartsWith("img/", StringComparison.OrdinalIgnoreCase))
+                    noticeImagePath = noticeImagePath[4..];
+                var noticeImageFile = string.IsNullOrWhiteSpace(noticeImagePath) ? "logosolsapcupsf.png" : noticeImagePath;
+                var noticeImageUrl = Url.Content($"~/img/{noticeImageFile}");
                 <article class="login-notice-card" data-login-notice data-duration-ms="@durationMilliseconds" role="dialog" aria-live="polite" aria-label="Aviso de inicio de sesión">
                     <div class="login-notice-header">
                         <span class="eyebrow">Aviso</span>

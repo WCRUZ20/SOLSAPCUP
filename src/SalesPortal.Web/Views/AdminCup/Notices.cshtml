@@ -84,7 +84,8 @@
             </div>
             <div class="form-field form-field-wide">
                 <label asp-for="Notice.ImageUrl">Imagen del aviso</label>
-                <input asp-for="Notice.ImageUrl" class="cup-input" placeholder="~/img/logosolsapcupsf.png o https://..." disabled data-admin-field="imageUrl" />
+                <input asp-for="Notice.ImageUrl" class="cup-input" placeholder="logosolsapcupsf.png o avisos/anuncio.png" disabled data-admin-field="imageUrl" />
+                <small>La ruta base es ~/img/. Ingresa solo el archivo o subcarpeta.</small>
             </div>
             <div class="form-field">
                 <label asp-for="Notice.StartDate">Desde</label>
