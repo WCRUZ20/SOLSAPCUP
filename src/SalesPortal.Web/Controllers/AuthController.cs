@@ -98,6 +98,8 @@ namespace SalesPortal.Web.Controllers
                 TempData["AssignedCountryCode"] = login.AssignedCountryCode;
             }
 
+            TempData["ShowLoginNotices"] = "true";
+
             if (login.MustChangePassword)
                 return RedirectToAction(nameof(ChangePassword));
 

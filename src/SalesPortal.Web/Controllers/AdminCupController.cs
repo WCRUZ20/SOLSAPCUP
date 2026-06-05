@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SalesPortal.Application.Abstractions.Persistence;
 using SalesPortal.Domain.Cup;
+using SalesPortal.Domain.Notices;
 using SalesPortal.Web.Models.Cup;
 
 namespace SalesPortal.Web.Controllers;
@@ -11,11 +12,13 @@ public sealed class AdminCupController : Controller
 {
     private readonly ITenantResolver _tenantResolver;
     private readonly ICupRepository _cupRepository;
+    private readonly INoticeRepository _noticeRepository;
 
-    public AdminCupController(ITenantResolver tenantResolver, ICupRepository cupRepository)
+    public AdminCupController(ITenantResolver tenantResolver, ICupRepository cupRepository, INoticeRepository noticeRepository)
     {
         _tenantResolver = tenantResolver;
         _cupRepository = cupRepository;
+        _noticeRepository = noticeRepository;
     }
 
     public IActionResult Index()
@@ -36,6 +39,72 @@ public sealed class AdminCupController : Controller
     public async Task<IActionResult> Countries(CancellationToken cancellationToken)
     {
         return View(await BuildCountriesModelAsync(cancellationToken));
+    }
+
+    public async Task<IActionResult> Notices(CancellationToken cancellationToken)
+    {
+        return View(await BuildNoticesModelAsync(cancellationToken));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SaveNotice(AdminCupNoticesViewModel model, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(model.Notice.Code) || string.IsNullOrWhiteSpace(model.Notice.Title) || string.IsNullOrWhiteSpace(model.Notice.Message))
+        {
+            TempData["Error"] = "Ingrese código, título y mensaje del aviso.";
+            return RedirectToAction(nameof(Notices));
+        }
+
+        if (!model.Notice.StartDate.HasValue || !model.Notice.EndDate.HasValue)
+        {
+            TempData["Error"] = "Ingrese la fecha inicial y final del aviso.";
+            return RedirectToAction(nameof(Notices));
+        }
+
+        if (model.Notice.EndDate.Value.Date < model.Notice.StartDate.Value.Date)
+        {
+            TempData["Error"] = "La fecha final no puede ser menor que la fecha inicial.";
+            return RedirectToAction(nameof(Notices));
+        }
+
+        if (model.Notice.DurationSeconds is < 1 or > 300)
+        {
+            TempData["Error"] = "Ingrese una duración entre 1 y 300 segundos.";
+            return RedirectToAction(nameof(Notices));
+        }
+
+        var tenant = _tenantResolver.ResolveByHost(HttpContext.Request.Host.Value);
+        await _noticeRepository.SaveNoticeAsync(tenant, new LoginNotice
+        {
+            Code = model.Notice.Code.Trim(),
+            Title = model.Notice.Title.Trim(),
+            Message = model.Notice.Message.Trim(),
+            StartDate = model.Notice.StartDate.Value.Date,
+            EndDate = model.Notice.EndDate.Value.Date,
+            DurationSeconds = model.Notice.DurationSeconds,
+            IsActive = model.Notice.IsActive
+        }, cancellationToken);
+
+        TempData["Success"] = "Aviso guardado correctamente.";
+        return RedirectToAction(nameof(Notices));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteNotice(string code, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            TempData["Error"] = "Seleccione un aviso para eliminar.";
+            return RedirectToAction(nameof(Notices));
+        }
+
+        var tenant = _tenantResolver.ResolveByHost(HttpContext.Request.Host.Value);
+        await _noticeRepository.DeleteNoticeAsync(tenant, code.Trim(), cancellationToken);
+
+        TempData["Success"] = "Aviso eliminado correctamente.";
+        return RedirectToAction(nameof(Notices));
     }
 
     [HttpPost]
@@ -534,6 +603,26 @@ public sealed class AdminCupController : Controller
             else if (goalsFor == goalsAgainst)
                 Points += 1;
         }
+    }
+
+    private async Task<AdminCupNoticesViewModel> BuildNoticesModelAsync(CancellationToken cancellationToken)
+    {
+        var tenant = _tenantResolver.ResolveByHost(HttpContext.Request.Host.Value);
+        var notices = await _noticeRepository.GetNoticesAsync(tenant, cancellationToken);
+
+        return new AdminCupNoticesViewModel
+        {
+            Notices = notices.Select(n => new NoticeFormViewModel
+            {
+                Code = n.Code,
+                Title = n.Title,
+                Message = n.Message,
+                StartDate = n.StartDate,
+                EndDate = n.EndDate,
+                DurationSeconds = n.DurationSeconds,
+                IsActive = n.IsActive
+            }).ToList()
+        };
     }
 
     private async Task<AdminCupPlayersViewModel> BuildPlayersModelAsync(CancellationToken cancellationToken)

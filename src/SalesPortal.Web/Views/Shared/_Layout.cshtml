@@ -1,5 +1,8 @@
 @using SalesPortal.Shared.Security
+@using SalesPortal.Application.Abstractions.Persistence
 @using System.Security.Claims
+@inject ITenantResolver TenantResolver
+@inject INoticeRepository NoticeRepository
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -43,6 +46,7 @@
                                 <a class="submenu-item @(isAdminCupActive && currentAction == "Players" ? "active" : string.Empty)" asp-controller="AdminCup" asp-action="Players" tabindex="@(isAdminCupActive ? null : "-1")">Jugadores</a>
                                 <a class="submenu-item @(isAdminCupActive && currentAction == "Matches" ? "active" : string.Empty)" asp-controller="AdminCup" asp-action="Matches" tabindex="@(isAdminCupActive ? null : "-1")">Partidos</a>
                                 <a class="submenu-item @(isAdminCupActive && currentAction == "Countries" ? "active" : string.Empty)" asp-controller="AdminCup" asp-action="Countries" tabindex="@(isAdminCupActive ? null : "-1")">Países</a>
+                                <a class="submenu-item @(isAdminCupActive && currentAction == "Notices" ? "active" : string.Empty)" asp-controller="AdminCup" asp-action="Notices" tabindex="@(isAdminCupActive ? null : "-1")">Avisos</a>
                             </div>
                         </div>
                     </div>
@@ -89,6 +93,42 @@
             </section>
         </main>
     </div>
+
+
+    @{
+        var shouldShowLoginNotices = User.Identity?.IsAuthenticated == true && TempData["ShowLoginNotices"] != null;
+        IReadOnlyList<SalesPortal.Domain.Notices.LoginNotice> loginNotices = Array.Empty<SalesPortal.Domain.Notices.LoginNotice>();
+        if (shouldShowLoginNotices)
+        {
+            try
+            {
+                var noticeTenant = TenantResolver.ResolveByHost(Context.Request.Host.Value);
+                loginNotices = await NoticeRepository.GetActiveLoginNoticesAsync(noticeTenant, DateTime.Today, Context.RequestAborted);
+            }
+            catch (Exception)
+            {
+                loginNotices = Array.Empty<SalesPortal.Domain.Notices.LoginNotice>();
+            }
+        }
+    }
+
+    @if (loginNotices.Count > 0)
+    {
+        <div class="login-notice-overlay" data-login-notice-overlay>
+            @foreach (var notice in loginNotices)
+            {
+                var durationMilliseconds = Math.Max(1, notice.DurationSeconds) * 1000;
+                <article class="login-notice-card" data-login-notice data-duration-ms="@durationMilliseconds" role="dialog" aria-live="polite" aria-label="Aviso de inicio de sesión">
+                    <div class="login-notice-header">
+                        <span class="eyebrow">Aviso</span>
+                        <button type="button" class="login-notice-close" data-login-notice-close aria-label="Cerrar aviso">×</button>
+                    </div>
+                    <h2>@notice.Title</h2>
+                    <p>@notice.Message</p>
+                </article>
+            }
+        </div>
+    }
 
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)

@@ -193,7 +193,12 @@
 
             function clearForm() {
                 fields.forEach(function (field) {
-                    field.value = field.dataset.defaultValue || '';
+                    var defaultValue = field.dataset.defaultValue || '';
+                    if (field.type === 'checkbox') {
+                        field.checked = defaultValue.toLowerCase() === 'true';
+                    } else {
+                        field.value = defaultValue;
+                    }
                     resetDateInputTypingState(field);
                 });
             }
@@ -287,7 +292,11 @@
 
                 fields.forEach(function (field) {
                     var value = row.dataset[getDataFieldName(field.dataset.adminField)];
-                    field.value = value || '';
+                    if (field.type === 'checkbox') {
+                        field.checked = String(value).toLowerCase() === 'true';
+                    } else {
+                        field.value = value || '';
+                    }
                     resetDateInputTypingState(field);
                 });
 
@@ -356,15 +365,53 @@
         });
     }
 
+
+
+    function initializeLoginNotices() {
+        var overlay = document.querySelector('[data-login-notice-overlay]');
+        if (!overlay) {
+            return;
+        }
+
+        var notices = Array.prototype.slice.call(overlay.querySelectorAll('[data-login-notice]'));
+
+        function removeNotice(notice) {
+            notice.classList.add('is-hiding');
+            window.setTimeout(function () {
+                notice.remove();
+                if (overlay.querySelectorAll('[data-login-notice]').length === 0) {
+                    overlay.remove();
+                }
+            }, 220);
+        }
+
+        notices.forEach(function (notice) {
+            var close = notice.querySelector('[data-login-notice-close]');
+            var duration = Number(notice.dataset.durationMs || 8000);
+
+            if (close) {
+                close.addEventListener('click', function () {
+                    removeNotice(notice);
+                });
+            }
+
+            window.setTimeout(function () {
+                removeNotice(notice);
+            }, Math.max(1000, duration));
+        });
+    }
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function () {
             initializeSidebarAccordion();
             initializeAdminDateInputs();
             initializeAdminGridEditors();
+            initializeLoginNotices();
         });
     } else {
         initializeSidebarAccordion();
         initializeAdminDateInputs();
         initializeAdminGridEditors();
+        initializeLoginNotices();
     }
 })();

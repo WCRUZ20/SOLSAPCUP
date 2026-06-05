@@ -39,6 +39,27 @@ namespace SalesPortal.Web.Models.Cup
         public CountryFormViewModel Country { get; set; } = new();
     }
 
+
+    public sealed class AdminCupNoticesViewModel
+    {
+        public IReadOnlyList<NoticeFormViewModel> Notices { get; set; } = Array.Empty<NoticeFormViewModel>();
+        public NoticeFormViewModel Notice { get; set; } = new();
+    }
+
+    public sealed class NoticeFormViewModel
+    {
+        [Required] public string Code { get; set; } = string.Empty;
+        [Required] public string Title { get; set; } = string.Empty;
+        [Required] public string Message { get; set; } = string.Empty;
+        [Required] public DateTime? StartDate { get; set; } = DateTime.Today;
+        [Required] public DateTime? EndDate { get; set; } = DateTime.Today;
+        [Required]
+        [Range(1, 300)]
+        public int DurationSeconds { get; set; } = 8;
+        public bool IsActive { get; set; } = true;
+        public string StatusLabel => IsActive ? "Activo" : "Inactivo";
+    }
+
     public sealed class CompetitorFormViewModel
     {
         [Required] public string Code { get; set; } = string.Empty;

@@ -1,0 +1,111 @@
+@model SalesPortal.Web.Models.Cup.AdminCupNoticesViewModel
+@{
+    ViewData["Title"] = "Administración - Avisos";
+}
+
+<section class="admin-workspace" data-admin-editor-scope>
+    <div class="cup-card admin-list-panel">
+        <div class="admin-panel-heading">
+            <div>
+                <span class="eyebrow">Avisos de inicio</span>
+                <h3>Buscar y seleccionar</h3>
+            </div>
+            <span class="admin-record-count" data-admin-grid-count>@Model.Notices.Count registros</span>
+        </div>
+        <div class="admin-table-toolbar admin-table-toolbar-compact">
+            <label class="admin-search-field">
+                <span>Buscar aviso</span>
+                <input type="search" placeholder="Código, título, mensaje o estado" data-admin-grid-search />
+            </label>
+        </div>
+        <div class="table-wrapper admin-table admin-table-compact">
+            <table data-admin-editor-grid>
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Título</th>
+                        <th>Desde</th>
+                        <th>Hasta</th>
+                        <th>Duración</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var notice in Model.Notices)
+                {
+                    var startDate = notice.StartDate?.ToString("yyyy-MM-dd") ?? string.Empty;
+                    var endDate = notice.EndDate?.ToString("yyyy-MM-dd") ?? string.Empty;
+                    <tr class="admin-selectable-row" tabindex="0"
+                        data-summary-title="@notice.Title" data-summary-detail="@notice.Code"
+                        data-field-code="@notice.Code" data-field-title="@notice.Title" data-field-message="@notice.Message"
+                        data-field-start-date="@startDate" data-field-end-date="@endDate"
+                        data-field-duration-seconds="@notice.DurationSeconds" data-field-is-active="@notice.IsActive.ToString().ToLowerInvariant()">
+                        <td class="text-strong">@notice.Code</td>
+                        <td>@notice.Title</td>
+                        <td>@(notice.StartDate?.ToString("dd/MM/yyyy") ?? "--")</td>
+                        <td>@(notice.EndDate?.ToString("dd/MM/yyyy") ?? "--")</td>
+                        <td>@notice.DurationSeconds s</td>
+                        <td><span class="admin-table-chip">@notice.StatusLabel</span></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <aside class="cup-card admin-module-card admin-editor-card admin-editor-panel" aria-labelledby="notice-editor-title">
+        <div class="admin-panel-heading admin-editor-heading">
+            <div>
+                <span class="eyebrow">Editor</span>
+                <h3 id="notice-editor-title">Agregar / editar aviso</h3>
+            </div>
+            <span class="admin-status-pill" data-admin-editor-status>Sin selección</span>
+        </div>
+        <div class="admin-selected-summary admin-selected-summary-compact" data-admin-selected-summary aria-live="polite">
+            <span>Aviso</span>
+            <strong>Ningún registro seleccionado</strong>
+        </div>
+        <p class="admin-selection-help" data-admin-editor-help>Selecciona una fila o crea un aviso nuevo.</p>
+        <form asp-action="SaveNotice" method="post" class="cup-form admin-compact-form" data-admin-editor-form>
+            @Html.AntiForgeryToken()
+            <div class="form-field">
+                <label asp-for="Notice.Code">Código</label>
+                <input asp-for="Notice.Code" class="cup-input" placeholder="AVISO-001" disabled data-admin-field="code" data-locked="true" />
+            </div>
+            <div class="form-field">
+                <label asp-for="Notice.Title">Título</label>
+                <input asp-for="Notice.Title" class="cup-input" placeholder="Título del aviso" disabled data-admin-field="title" />
+            </div>
+            <div class="form-field form-field-wide">
+                <label asp-for="Notice.Message">Mensaje</label>
+                <textarea asp-for="Notice.Message" class="cup-input" rows="4" placeholder="Mensaje que verá el usuario al iniciar sesión" disabled data-admin-field="message"></textarea>
+            </div>
+            <div class="form-field">
+                <label asp-for="Notice.StartDate">Desde</label>
+                <input asp-for="Notice.StartDate" class="cup-input" type="date" disabled data-admin-field="startDate" data-admin-date-input />
+            </div>
+            <div class="form-field">
+                <label asp-for="Notice.EndDate">Hasta</label>
+                <input asp-for="Notice.EndDate" class="cup-input" type="date" disabled data-admin-field="endDate" data-admin-date-input />
+            </div>
+            <div class="form-field">
+                <label asp-for="Notice.DurationSeconds">Duración en pantalla (seg.)</label>
+                <input asp-for="Notice.DurationSeconds" class="cup-input" type="number" min="1" max="300" step="1" disabled data-admin-field="durationSeconds" data-default-value="8" />
+            </div>
+            <div class="form-field notice-active-field">
+                <label asp-for="Notice.IsActive">Activo</label>
+                <input asp-for="Notice.IsActive" class="notice-checkbox" type="checkbox" disabled data-admin-field="isActive" data-default-value="true" />
+            </div>
+            <div class="admin-form-actions">
+                <button type="button" class="btn btn-light" data-admin-editor-new>Nuevo</button>
+                <button type="button" class="btn btn-light" data-admin-editor-clear disabled>Limpiar</button>
+                <button type="submit" class="btn btn-primary" disabled data-admin-editor-submit>Guardar</button>
+            </div>
+        </form>
+        <form asp-action="DeleteNotice" method="post" class="admin-delete-form" data-admin-delete-form onsubmit="return confirm('¿Eliminar este aviso?');">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="code" data-admin-delete-key />
+            <button type="submit" class="btn btn-red" data-admin-delete-submit disabled>Eliminar aviso</button>
+        </form>
+    </aside>
+</section>

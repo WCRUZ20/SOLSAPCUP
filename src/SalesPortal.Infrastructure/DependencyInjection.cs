@@ -20,6 +20,7 @@ namespace SalesPortal.Infrastructure
             services.AddScoped<SapConnectionFactory>();
             services.AddScoped<ICustomerRepository, SapCustomerRepository>();
             services.AddScoped<ICupRepository, SapCupRepository>();
+            services.AddScoped<INoticeRepository, SapNoticeRepository>();
 
             services.AddScoped<IPasswordHasher, PasswordHasher>();
             services.AddScoped<IAuthService, AuthService>();
