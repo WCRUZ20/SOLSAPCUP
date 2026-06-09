@@ -82,6 +82,9 @@ namespace SalesPortal.Web.Models.Cup
         [Required] public DateTime? StartDate { get; set; } = DateTime.Today;
         [Required] public string StartTime { get; set; } = "17:00";
         [Required]
+        [Range(1, 365)]
+        public int IntervalDays { get; set; } = 1;
+        [Required]
         [Range(1, 1440)]
         public int IntervalMinutes { get; set; } = 10;
     }

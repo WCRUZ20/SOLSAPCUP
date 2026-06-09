@@ -30,6 +30,10 @@
                         <input asp-for="Schedule.StartTime" type="time" class="cup-input" required />
                     </label>
                     <label class="admin-schedule-field">
+                        <span>Días / jornada</span>
+                        <input asp-for="Schedule.IntervalDays" type="number" class="cup-input" min="1" max="365" step="1" required />
+                    </label>
+                    <label class="admin-schedule-field">
                         <span>Intervalo (min)</span>
                         <input asp-for="Schedule.IntervalMinutes" type="number" class="cup-input" min="1" step="1" required />
                     </label>

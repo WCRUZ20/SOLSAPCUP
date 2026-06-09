@@ -206,6 +206,12 @@ public sealed class AdminCupController : Controller
             return RedirectToAction(nameof(Matches));
         }
 
+        if (model.Schedule.IntervalDays is < 1 or > 365)
+        {
+            TempData["Error"] = "Ingrese un intervalo entre 1 y 365 días por jornada para calcular partidos.";
+            return RedirectToAction(nameof(Matches));
+        }
+
         if (model.Schedule.IntervalMinutes is < 1 or > 1440)
         {
             TempData["Error"] = "Ingrese un intervalo entre 1 y 1440 minutos para calcular partidos.";
@@ -238,6 +244,7 @@ public sealed class AdminCupController : Controller
             activeCompetitors,
             model.Schedule.StartDate.Value,
             scheduleStartTime,
+            model.Schedule.IntervalDays,
             TimeSpan.FromMinutes(model.Schedule.IntervalMinutes));
         var usedCodes = existingMatches
             .Select(match => match.Code)
@@ -370,6 +377,7 @@ public sealed class AdminCupController : Controller
         IReadOnlyList<Competitor> competitors,
         DateTime startDate,
         TimeSpan startTime,
+        int daysBetweenRounds,
         TimeSpan matchInterval)
     {
         var rotation = competitors.ToList();
@@ -379,7 +387,7 @@ public sealed class AdminCupController : Controller
 
         for (var roundIndex = 0; roundIndex < rounds; roundIndex++)
         {
-            var matchDate = startDate.Date.AddDays(roundIndex);
+            var matchDate = startDate.Date.AddDays(roundIndex * daysBetweenRounds);
 
             for (var matchIndex = 0; matchIndex < matchesPerRound; matchIndex++)
             {
